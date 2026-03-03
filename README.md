@@ -1,7 +1,3 @@
----
-title: "Proposal: Explainable Multi-Modal Risk Detection for Online Stores (Fraud/Abuse + Churn)"
----
-
 # Proposal: Explainable Multi-Modal Risk Detection for Online Stores (Fraud/Abuse + Churn)
 
 ## Motivation
