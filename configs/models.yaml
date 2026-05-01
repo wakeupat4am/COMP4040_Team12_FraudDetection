@@ -1,0 +1,11 @@
+modules:
+  anomaly:
+    baseline: isolation_forest
+  graph:
+    baseline: graph_features
+  text:
+    baseline: sentence_embedding_classifier
+  supervised:
+    baseline: lightgbm
+  ensemble:
+    baseline: logistic_regression_meta_model

@@ -1,0 +1,26 @@
+# Python cache and environments
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.venv/
+venv/
+
+# Notebook and OS noise
+.ipynb_checkpoints/
+.DS_Store
+
+# Local artifacts
+data/raw/*
+data/interim/*
+data/processed/*
+models/*
+reports/figures/*
+
+# Keep directory placeholders
+!data/raw/.gitkeep
+!data/interim/.gitkeep
+!data/processed/.gitkeep
+!data/external/.gitkeep
+!models/.gitkeep
+!reports/figures/.gitkeep

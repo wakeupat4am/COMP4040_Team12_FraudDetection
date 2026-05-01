@@ -150,3 +150,18 @@ We will obtain data by instrumenting and exporting from:
 ### Churn metrics
 - PR-AUC / ROC-AUC, lift in top deciles
 - Business-oriented: retention uplift simulation (if interventions exist)
+
+---
+
+## Project structure
+
+An initial repository structure has been added to support implementation:
+
+- `src/fraud_detection/` for reusable ingestion, feature, modeling, and explainability code
+- `configs/` for versioned YAML settings
+- `data/` split into `raw`, `interim`, `processed`, and `external`
+- `notebooks/` for exploration only
+- `models/` and `reports/` for outputs
+- `tests/` for automated validation
+
+See `PROJECT_STRUCTURE.md` and `docs/architecture.md` for the intended layout.

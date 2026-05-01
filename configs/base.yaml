@@ -1,0 +1,8 @@
+project:
+  name: fraud-detection
+  random_seed: 42
+
+runtime:
+  timezone: Asia/Ho_Chi_Minh
+  target_entity: order_id
+  prediction_mode: batch

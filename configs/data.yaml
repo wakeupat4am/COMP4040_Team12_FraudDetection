@@ -1,0 +1,11 @@
+entities:
+  primary_key: order_id
+  secondary_keys:
+    - user_id
+    - session_id
+    - ticket_id
+
+labels:
+  fraud_outcome: chargeback_or_confirmed_abuse
+  return_abuse: abusive_refund_or_return
+  churn: inactive_window
