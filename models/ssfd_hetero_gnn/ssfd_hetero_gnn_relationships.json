@@ -1,0 +1,41 @@
+{
+  "node_counts": {
+    "event": 77881,
+    "source": 30346,
+    "target": 886,
+    "location": 296,
+    "type": 166
+  },
+  "edge_counts": {
+    "('event', 'from_source', 'source')": 77881,
+    "('source', 'rev_from_source', 'event')": 77881,
+    "('event', 'to_target', 'target')": 77881,
+    "('target', 'rev_to_target', 'event')": 77881,
+    "('event', 'at_location', 'location')": 77881,
+    "('location', 'rev_at_location', 'event')": 77881,
+    "('event', 'has_type', 'type')": 77881,
+    "('type', 'rev_has_type', 'event')": 77881,
+    "('source', 'to_target', 'target')": 77881,
+    "('target', 'rev_to_target', 'source')": 77881,
+    "('source', 'at_location', 'location')": 77881,
+    "('location', 'rev_at_location', 'source')": 77881,
+    "('source', 'uses_type', 'type')": 77881,
+    "('type', 'rev_uses_type', 'source')": 77881,
+    "('target', 'at_location', 'location')": 77881,
+    "('location', 'rev_target_location', 'target')": 77881,
+    "('target', 'uses_type', 'type')": 77881,
+    "('type', 'rev_target_type', 'target')": 77881
+  },
+  "relationship_method": {
+    "event_from_source": "Each transaction event connects to exactly one source node.",
+    "event_to_target": "Each transaction event connects to exactly one target node.",
+    "event_at_location": "Each transaction event connects to its location node.",
+    "event_has_type": "Each transaction event connects to its transaction type node.",
+    "reverse_edges": "Reverse relations are added so information can flow from entities back to events.",
+    "source_to_target": "A direct source-target edge is added for every observed transaction pair.",
+    "source_to_location": "A direct source-location edge is added for every observed source-location interaction.",
+    "source_to_type": "A direct source-type edge is added for every observed source-type interaction.",
+    "target_to_location": "A direct target-location edge is added for every observed target-location interaction.",
+    "target_to_type": "A direct target-type edge is added for every observed target-type interaction."
+  }
+}

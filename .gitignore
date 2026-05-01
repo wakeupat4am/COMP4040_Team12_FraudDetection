@@ -24,3 +24,5 @@ reports/figures/*
 !data/external/.gitkeep
 !models/.gitkeep
 !reports/figures/.gitkeep
+data/raw/
+data/processed/

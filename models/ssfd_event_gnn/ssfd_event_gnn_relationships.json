@@ -1,0 +1,29 @@
+{
+  "node_counts": {
+    "event": 77881,
+    "source": 30346,
+    "target": 886
+  },
+  "edge_counts": {
+    "('event', 'next_event', 'event')": 77880,
+    "('event', 'next_same_source', 'event')": 47535,
+    "('event', 'next_same_target', 'event')": 76995,
+    "('event', 'from_source', 'source')": 77881,
+    "('source', 'rev_from_source', 'event')": 77881,
+    "('event', 'to_target', 'target')": 77881,
+    "('target', 'rev_to_target', 'event')": 77881,
+    "('event', 'prev_event', 'event')": 77880,
+    "('event', 'prev_same_source', 'event')": 47535,
+    "('event', 'prev_same_target', 'event')": 76995
+  },
+  "relationship_method": {
+    "event_next_event": "Each transaction connects to the immediately next transaction in global time order.",
+    "event_prev_event": "Reverse global temporal edges allow backward message passing.",
+    "event_next_same_source": "Each source-specific transaction sequence is linked in time order.",
+    "event_prev_same_source": "Reverse same-source temporal edges allow backward message passing.",
+    "event_next_same_target": "Each target-specific transaction sequence is linked in time order.",
+    "event_prev_same_target": "Reverse same-target temporal edges allow backward message passing.",
+    "event_from_source": "Each event connects to its source entity.",
+    "event_to_target": "Each event connects to its target entity."
+  }
+}
