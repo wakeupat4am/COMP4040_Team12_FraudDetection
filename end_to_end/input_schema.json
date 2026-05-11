@@ -1,0 +1,55 @@
+{
+  "title": "FraudTransactionInput",
+  "type": "object",
+  "required": [
+    "event_id",
+    "event_time",
+    "source_id",
+    "target_id",
+    "amount",
+    "location_id",
+    "type_id",
+    "dataset_family"
+  ],
+  "properties": {
+    "event_id": {
+      "type": "string",
+      "description": "Unique identifier for the current transaction event."
+    },
+    "event_time": {
+      "type": "number",
+      "description": "Time index or event timestamp normalized to the dataset family."
+    },
+    "source_id": {
+      "type": "string",
+      "description": "Sender or origin entity identifier."
+    },
+    "target_id": {
+      "type": "string",
+      "description": "Receiver or destination entity identifier."
+    },
+    "amount": {
+      "type": "number",
+      "minimum": 0,
+      "description": "Transaction amount."
+    },
+    "location_id": {
+      "type": "string",
+      "description": "Location token for the transaction."
+    },
+    "type_id": {
+      "type": "string",
+      "description": "Transaction type token."
+    },
+    "dataset_family": {
+      "type": "string",
+      "enum": ["ssfd", "paysim"],
+      "description": "Selects the feature and model path family."
+    },
+    "raw_attributes": {
+      "type": "object",
+      "description": "Optional dataset-specific raw attributes not part of the shared contract."
+    }
+  },
+  "additionalProperties": false
+}

@@ -17,5 +17,6 @@
       731
     ]
   ],
-  "classification_report": "              precision    recall  f1-score   support\n\n           0     0.6761    0.9640    0.7948      3556\n           1     0.8510    0.3080    0.4524      2373\n\n    accuracy                         0.7015      5929\n   macro avg     0.7636    0.6360    0.6236      5929\nweighted avg     0.7461    0.7015    0.6577      5929\n"
+  "classification_report": "              precision    recall  f1-score   support\n\n           0     0.6761    0.9640    0.7948      3556\n           1     0.8510    0.3080    0.4524      2373\n\n    accuracy                         0.7015      5929\n   macro avg     0.7636    0.6360    0.6236      5929\nweighted avg     0.7461    0.7015    0.6577      5929\n",
+  "threshold_used": 0.5
 }

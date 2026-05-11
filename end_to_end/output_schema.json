@@ -1,0 +1,61 @@
+{
+  "title": "FraudPipelineOutput",
+  "type": "object",
+  "required": [
+    "event_id",
+    "dataset_family",
+    "final_risk_score",
+    "risk_bucket",
+    "decision",
+    "model_scores",
+    "required_state_status"
+  ],
+  "properties": {
+    "event_id": {
+      "type": "string"
+    },
+    "dataset_family": {
+      "type": "string",
+      "enum": ["ssfd", "paysim"]
+    },
+    "final_risk_score": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 1
+    },
+    "risk_bucket": {
+      "type": "string",
+      "enum": ["low", "medium", "high", "critical"]
+    },
+    "decision": {
+      "type": "string",
+      "enum": ["allow", "review", "block"]
+    },
+    "model_scores": {
+      "type": "object",
+      "required": ["event_gnn", "adaboost", "lightgbm"],
+      "properties": {
+        "event_gnn": {"type": "number"},
+        "adaboost": {"type": "number"},
+        "lightgbm": {"type": "number"},
+        "hetero_gnn_shadow": {"type": ["number", "null"]}
+      }
+    },
+    "required_state_status": {
+      "type": "object",
+      "required": ["history_available", "graph_context_available"],
+      "properties": {
+        "history_available": {"type": "boolean"},
+        "graph_context_available": {"type": "boolean"}
+      }
+    },
+    "routing_metadata": {
+      "type": "object"
+    },
+    "explanation_stub": {
+      "type": "object",
+      "description": "Placeholder for SHAP, graph evidence, and event-sequence explanation outputs."
+    }
+  },
+  "additionalProperties": false
+}
