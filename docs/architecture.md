@@ -25,3 +25,11 @@ repeatable ML pipeline without restructuring the project later.
 - `pipelines/ensemble.py`: module score fusion
 - `pipelines/explainability.py`: SHAP, graph, and text explanations
 - `utils/io.py`: shared path and file helpers
+
+## Current Application Layers
+
+- `src/fraud_detection/scoring.py`: reusable scoring and explanation assembly
+- `src/fraud_detection/api/`: FastAPI app, response models, and persistence layer
+- `migrations/`: database schema bootstrap SQL for the prototype backend
+- `scripts/seed_sample_cases.py`: local sample-data seeding helper
+- `web/`: Next.js integration prototype for queue, case detail, and metrics views

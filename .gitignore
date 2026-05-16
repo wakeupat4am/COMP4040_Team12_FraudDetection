@@ -5,6 +5,10 @@ __pycache__/
 .mypy_cache/
 .venv/
 venv/
+node_modules/
+.next/
+dist/
+build/
 
 # Notebook and OS noise
 .ipynb_checkpoints/
@@ -16,6 +20,11 @@ data/interim/*
 data/processed/*
 models/*
 reports/figures/*
+web/.next/*
+web/node_modules/*
+data/interim/*.db
+data/interim/*.sqlite
+data/interim/*.sqlite3
 
 # Keep directory placeholders
 !data/raw/.gitkeep

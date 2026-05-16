@@ -1,6 +1,70 @@
-# Proposal: Explainable Multi-Modal Risk Detection for Online Stores (Fraud/Abuse + Churn)
+# Production Direction: Explainable Fraud Ops for Online Stores
 
-## Motivation
+## Current Scope
+
+This repository started as a broader multi-modal risk research project covering
+fraud/abuse and churn. The active implementation roadmap now follows
+`PLAN_datamining.md` and focuses on a fraud-operations v1:
+
+- fraud scoring for transaction and event review
+- structured evidence payloads for analyst workflows
+- backend-first productionization via `FastAPI`
+- analyst dashboard prototype via `Next.js`
+- persistence-backed backend workflows
+
+Churn modeling remains a research direction, but it is explicitly out of the
+first production milestone.
+
+## Local Prototype Run
+
+### Backend
+
+Set `PYTHONPATH=src` and run the API with Uvicorn:
+
+```bash
+uvicorn fraud_detection.api.app:app --reload
+```
+
+Optional environment:
+
+- `DATABASE_URL`
+  - default: SQLite database at `data/interim/fraud_ops.db`
+  - Postgres example: `postgresql+psycopg://user:password@localhost:5432/fraud_ops`
+
+Useful local endpoints:
+
+- `GET /health`
+- `GET /docs`
+
+Seed sample cases after the API is running:
+
+```bash
+python scripts/seed_sample_cases.py
+```
+
+### Frontend
+
+The prototype web app lives in `web/` and targets the local backend by default
+at `http://127.0.0.1:8000`.
+
+```bash
+cd web
+npm install
+npm run dev
+```
+
+Optional environment:
+
+- `NEXT_PUBLIC_API_BASE_URL`
+  - default: `http://127.0.0.1:8000`
+
+Prototype routes:
+
+- `/cases`
+- `/cases/[eventId]`
+- `/metrics`
+
+## Original Research Motivation
 
 ### Problem
 We tackle an applied data-mining problem: building a production-ready system that:
