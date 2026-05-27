@@ -153,15 +153,14 @@ We will obtain data by instrumenting and exporting from:
 
 ---
 
-## Project structure
+## Top-Level Layout
 
-An initial repository structure has been added to support implementation:
-
-- `src/fraud_detection/` for reusable ingestion, feature, modeling, and explainability code
-- `configs/` for versioned YAML settings
-- `data/` split into `raw`, `interim`, `processed`, and `external`
-- `notebooks/` for exploration only
-- `models/` and `reports/` for outputs
-- `tests/` for automated validation
-
-See `PROJECT_STRUCTURE.md` and `docs/architecture.md` for the intended layout.
+- `configs/`: versioned YAML configs for paths, data contracts, and model defaults
+- `data/`: staged datasets (`raw`, `interim`, `processed`, `external`)
+- `docs/`: architecture and implementation notes
+- `models/`: trained model artifacts and serialized explainers
+- `notebooks/`: exploratory analysis only
+- `reports/`: generated figures and final outputs
+- `scripts/`: one-off or entry-point scripts
+- `src/`: reusable Python package code
+- `tests/`: automated testsout.
