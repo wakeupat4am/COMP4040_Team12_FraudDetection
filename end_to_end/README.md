@@ -1,5 +1,9 @@
 # End-to-End Fraud Scoring
 
+This folder still contains the validated scoring runtime and schema contracts.
+The production backend boundary now lives under `src/fraud_detection/api/`,
+which wraps this runtime with persistence, auth, and analyst workflow APIs.
+
 This package now contains the runnable inference path for the selected
 `S-FFSD` production-candidate ensemble:
 
@@ -47,10 +51,10 @@ Local demo:
 python3 -m end_to_end.pipeline
 ```
 
-API server:
+Production API server:
 
 ```bash
-uvicorn end_to_end.api:app --reload
+uvicorn fraud_detection.api:app --reload
 ```
 
 Convenience entrypoint:
@@ -70,8 +74,9 @@ Implemented:
 - validation-time score calibration
 - weighted ensemble scoring
 - explanation generation
-- FastAPI endpoints for `/health`, `/config`, `/score`, and `/feedback`
-- monitoring and feedback persistence
+- production FastAPI backend for `/auth/login`, `/score`, `/cases`, `/cases/{transaction_id}`, `/cases/{transaction_id}/decision`, `/cases/{transaction_id}/rescore`, and `/metrics/summary`
+- Postgres/ORM-ready persistence model for cases, score runs, analyst reviews, users, and audit logs
+- monitoring and audit persistence
 
 Current limitations:
 
@@ -79,3 +84,51 @@ Current limitations:
 - Event-GNN inference uses a local recent-context graph rather than a fully
   maintained online global graph
 - monitoring is file-based rather than integrated into a telemetry stack
+
+## Web-Facing Payload Example
+
+The later `web/` app can treat `GET /cases/{transaction_id}` as the primary
+detail payload. Example shape:
+
+```json
+{
+  "transaction_id": "tx_000001",
+  "final_risk_score": 0.83,
+  "risk_bucket": "critical",
+  "decision": "block",
+  "review_status": "pending",
+  "latest_output": {
+    "transaction_id": "tx_000001",
+    "pipeline_profile": "ssfd_production_candidate",
+    "final_risk_score": 0.83,
+    "risk_bucket": "critical",
+    "decision": "block",
+    "model_scores": {
+      "event_gnn": 0.91,
+      "adaboost": 0.72,
+      "lightgbm": 0.68
+    },
+    "required_state_status": {
+      "history_available": true,
+      "graph_context_available": false
+    },
+    "routing_metadata": {
+      "base_models": ["event_gnn", "adaboost", "lightgbm"],
+      "operating_threshold": 0.6
+    },
+    "explanations": {
+      "tabular_risk_factors": [],
+      "event_context_summary": [],
+      "state_availability": {
+        "history_available": true,
+        "graph_context_available": false,
+        "warning": "Graph context is limited for this case."
+      }
+    }
+  },
+  "latest_analyst_decision": null,
+  "latest_note": null,
+  "review_history": [],
+  "audit_trail": []
+}
+```

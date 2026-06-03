@@ -1,0 +1,16 @@
+{
+  "transaction_id": "tx-demo-0001",
+  "transaction_timestamp": "2026-06-04T09:30:00Z",
+  "sender_id": "sender-demo-001",
+  "receiver_id": "receiver-demo-009",
+  "amount": 185.75,
+  "transaction_location": "VN-HCM",
+  "transaction_type": "card_not_present",
+  "currency": "USD",
+  "channel": "web",
+  "raw_attributes": {
+    "device_id": "device-demo-01",
+    "ip_country": "VN",
+    "campaign": "summer-checkout"
+  }
+}
