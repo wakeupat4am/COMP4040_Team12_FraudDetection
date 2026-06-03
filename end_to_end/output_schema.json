@@ -2,21 +2,22 @@
   "title": "FraudPipelineOutput",
   "type": "object",
   "required": [
-    "event_id",
-    "dataset_family",
+    "transaction_id",
+    "pipeline_profile",
     "final_risk_score",
     "risk_bucket",
     "decision",
     "model_scores",
-    "required_state_status"
+    "required_state_status",
+    "explanations"
   ],
   "properties": {
-    "event_id": {
+    "transaction_id": {
       "type": "string"
     },
-    "dataset_family": {
+    "pipeline_profile": {
       "type": "string",
-      "enum": ["ssfd", "paysim"]
+      "description": "Active model profile used for inference."
     },
     "final_risk_score": {
       "type": "number",
@@ -25,36 +26,72 @@
     },
     "risk_bucket": {
       "type": "string",
-      "enum": ["low", "medium", "high", "critical"]
+      "enum": [
+        "low",
+        "medium",
+        "high",
+        "critical"
+      ]
     },
     "decision": {
       "type": "string",
-      "enum": ["allow", "review", "block"]
+      "enum": [
+        "allow",
+        "review",
+        "block"
+      ]
     },
     "model_scores": {
       "type": "object",
-      "required": ["event_gnn", "adaboost", "lightgbm"],
+      "required": [
+        "event_gnn",
+        "adaboost",
+        "lightgbm"
+      ],
       "properties": {
-        "event_gnn": {"type": "number"},
-        "adaboost": {"type": "number"},
-        "lightgbm": {"type": "number"},
-        "hetero_gnn_shadow": {"type": ["number", "null"]}
+        "event_gnn": {
+          "type": "number"
+        },
+        "adaboost": {
+          "type": "number"
+        },
+        "lightgbm": {
+          "type": "number"
+        }
       }
     },
     "required_state_status": {
       "type": "object",
-      "required": ["history_available", "graph_context_available"],
+      "required": [
+        "history_available",
+        "graph_context_available"
+      ],
       "properties": {
-        "history_available": {"type": "boolean"},
-        "graph_context_available": {"type": "boolean"}
+        "history_available": {
+          "type": "boolean"
+        },
+        "graph_context_available": {
+          "type": "boolean"
+        }
       }
     },
     "routing_metadata": {
       "type": "object"
     },
-    "explanation_stub": {
+    "explanations": {
       "type": "object",
-      "description": "Placeholder for SHAP, graph evidence, and event-sequence explanation outputs."
+      "required": [
+        "tabular_risk_factors",
+        "event_context_summary"
+      ],
+      "properties": {
+        "tabular_risk_factors": {
+          "type": "array"
+        },
+        "event_context_summary": {
+          "type": "array"
+        }
+      }
     }
   },
   "additionalProperties": false

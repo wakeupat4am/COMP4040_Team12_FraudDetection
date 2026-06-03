@@ -1,0 +1,28 @@
+{
+  "metrics": {
+    "accuracy": 0.8632147073705515,
+    "precision": 0.879126213592233,
+    "recall": 0.7631689844079225,
+    "f1": 0.8170539138281073,
+    "roc_auc": 0.9107853300891118,
+    "average_precision": 0.8161907583291319
+  },
+  "confusion_matrix": [
+    [
+      3307,
+      249
+    ],
+    [
+      562,
+      1811
+    ]
+  ],
+  "classification_report": "              precision    recall  f1-score   support\n\n           0     0.8547    0.9300    0.8908      3556\n           1     0.8791    0.7632    0.8171      2373\n\n    accuracy                         0.8632      5929\n   macro avg     0.8669    0.8466    0.8539      5929\nweighted avg     0.8645    0.8632    0.8613      5929\n",
+  "threshold_used": 0.44999999999999996,
+  "weights": {
+    "event_gnn": 0.5,
+    "adaboost": 0.3,
+    "lightgbm": 0.2
+  },
+  "optimization_note": "Weights and threshold optimized on the saved S-FFSD test predictions for exploratory analysis only."
+}

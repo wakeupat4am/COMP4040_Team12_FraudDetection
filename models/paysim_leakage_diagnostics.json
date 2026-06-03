@@ -1,0 +1,82 @@
+{
+  "split_summary": {
+    "train": {
+      "rows": 92929,
+      "fraud_count": 1618,
+      "fraud_ratio": 0.017411141839468843,
+      "step_min": 500,
+      "step_max": 649
+    },
+    "val": {
+      "rows": 29078,
+      "fraud_count": 542,
+      "fraud_ratio": 0.018639521287571358,
+      "step_min": 650,
+      "step_max": 699
+    },
+    "test": {
+      "rows": 5223,
+      "fraud_count": 496,
+      "fraud_ratio": 0.09496457974344247,
+      "step_min": 700,
+      "step_max": 743
+    }
+  },
+  "single_feature_separability": {
+    "org_balance_error_flag": {
+      "roc_auc": 0.07447862997058763,
+      "average_precision": 0.09420667192164131
+    },
+    "dest_balance_error_flag": {
+      "roc_auc": 0.6863198373107133,
+      "average_precision": 0.17451857238630308
+    },
+    "org_delta_minus_amount": {
+      "roc_auc": 0.9193352190914241,
+      "average_precision": 0.47101466242797563
+    },
+    "dest_delta_minus_amount": {
+      "roc_auc": 0.24636717177231687,
+      "average_precision": 0.06207360658123916
+    },
+    "type_CASH_OUT": {
+      "roc_auc": 0.3392743812143008,
+      "average_precision": 0.07749923492134603
+    },
+    "type_TRANSFER": {
+      "roc_auc": 0.6607256187856992,
+      "average_precision": 0.1610354034248348
+    }
+  },
+  "shuffled_label_checks": {
+    "lightgbm_shuffled_labels": {
+      "accuracy": 0.9050354202565576,
+      "precision": 0.0,
+      "recall": 0.0,
+      "f1": 0.0,
+      "roc_auc": 0.5988378788292377,
+      "average_precision": 0.13264286990179516
+    },
+    "adaboost_shuffled_labels": {
+      "accuracy": 0.9050354202565576,
+      "precision": 0.0,
+      "recall": 0.0,
+      "f1": 0.0,
+      "roc_auc": 0.5993731531968036,
+      "average_precision": 0.15007081212301615
+    }
+  },
+  "graph_transductive_overlap": {
+    "test_orig_seen_in_train_ratio": 0.0003829216925138809,
+    "test_dest_seen_in_train_ratio": 0.10779245644265747,
+    "test_pair_seen_in_train_ratio": 0.0,
+    "val_orig_seen_in_train_ratio": 3.439026067817594e-05,
+    "val_dest_seen_in_train_ratio": 0.1506637320310888,
+    "val_pair_seen_in_train_ratio": 0.0
+  },
+  "notes": {
+    "shortcut_signal": "If single-feature ROC-AUC or AP is near 1.0 for balance-error features, PaySim is likely easy because of simulator artifacts.",
+    "shuffled_labels": "If shuffled-label models still score far above chance, suspect leakage in preprocessing or split logic.",
+    "graph_overlap": "High overlap means the GNN is operating in a transductive setting where test nodes share entities with train nodes."
+  }
+}

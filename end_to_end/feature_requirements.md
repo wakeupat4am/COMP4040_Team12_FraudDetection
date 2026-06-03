@@ -1,78 +1,66 @@
 # Feature Requirements
 
-## Shared Online Input
+## External Request Contract
 
-Every scoring request must provide:
+The online caller should send only immutable transaction facts:
 
-- `event_id`
-- `event_time`
-- `source_id`
-- `target_id`
+- `transaction_id`
+- `transaction_timestamp`
+- `sender_id`
+- `receiver_id`
 - `amount`
-- `location_id`
-- `type_id`
+- `transaction_location`
+- `transaction_type`
+- optional `currency`
+- optional `channel`
+- optional `raw_attributes`
 
-## Required Historical State
+The caller should not send engineered historical features or graph context.
+Those are computed internally to avoid feature skew and future-leakage errors.
 
-The pipeline cannot reproduce the trained behavior from raw input alone. It also
-needs a state layer with prior transactions keyed by:
+## Required Internal State
 
-- source
-- target
-- source-target pair
-- global event order
+The pipeline reproduces the trained model behavior by maintaining:
 
-## Required Tabular Features
+- sender history
+- receiver history
+- sender-receiver pair history
+- recent global event window
 
-### S-FFSD
+This state supports both the tabular models and the Event-GNN.
+
+## Tabular Features Built Internally
+
+For `LightGBM` and `AdaBoost`, the online feature builder computes:
 
 - source transaction count so far
 - target transaction count so far
+- location transaction count so far
+- type transaction count so far
 - source-target pair count so far
-- source time gap
-- target time gap
-- pair time gap
-- source historical mean amount
-- target historical mean amount
-- pair historical mean amount
-- amount deviation from source/target/pair history
+- source, target, and pair time gaps
+- source, target, and pair historical mean amounts
+- amount deviation from those historical means
 - source seen target/location/type before flags
+- sender/receiver/location/type frequency and count statistics
 
-### PaySim
+## Event-GNN Context Built Internally
 
-- origin and destination balance deltas
-- amount-vs-balance consistency features
-- zero-balance flags
-- origin transaction count so far
-- destination transaction count so far
-- origin-destination pair count so far
-- origin/destination step gaps
-- origin/destination historical mean amount
-- type one-hot or categorical encoding
+For the `Event-Based GNN`, the online feature builder assembles a local graph
+context that includes:
 
-## Required Graph Context
+- recent global events
+- recent events for the same sender
+- recent events for the same receiver
+- the current candidate event as the `test` node
 
-### Event-Based GNN
+That context is converted to the same event-graph representation used by the
+training code.
 
-- previous global event
-- previous event for the same source
-- previous event for the same target
-- source-node features
-- target-node features
+## Explanation Inputs Retained
 
-### Heterogeneous GNN
+To support analyst-facing output, the pipeline retains:
 
-- event-to-source edges
-- event-to-target edges
-- event-to-location edges
-- event-to-type edges
-- optional direct entity-to-entity edges when enabled
-
-## Output Explanation Inputs
-
-To support analyst explanations later, retain:
-
-- source history window used for scoring
-- target history window used for scoring
-- top contributing tabular features
-- event-neighborhood IDs used by the event-GNN
+- top tabular risk factors from the engineered feature row
+- sender/receiver history sizes
+- local graph context size used for Event-GNN scoring

@@ -1,7 +1,9 @@
 {
+  "default_pipeline_profile": "ssfd_production_candidate",
   "selected_ensemble": {
-    "name": "ssfd_primary_candidate",
+    "name": "ssfd_production_candidate",
     "dataset_family": "ssfd",
+    "operating_threshold": 0.6,
     "base_models": [
       "event_gnn",
       "adaboost",
@@ -21,26 +23,22 @@
       "high": 0.75
     },
     "decision": {
-      "review": 0.5,
+      "review": 0.6,
       "block": 0.8
     }
   },
-  "model_paths": {
-    "ssfd": {
-      "lightgbm": "models/ssfd_lightgbm/ssfd_lightgbm_model.txt",
-      "adaboost": "models/ssfd_adaboost/ssfd_adaboost_metrics.json",
-      "event_gnn": "models/ssfd_event_gnn/ssfd_event_gnn_model.pt",
-      "hetero_gnn": "models/ssfd_hetero_gnn/ssfd_hetero_gnn_model.pt"
-    },
-    "paysim": {
-      "lightgbm": "models/paysim_lightgbm/model.txt",
-      "adaboost": "models/paysim_adaboost/metrics.json",
-      "event_gnn": "models/paysim_event_gnn/model.pt",
-      "hetero_gnn": "models/paysim_hetero_gnn/model.pt"
-    }
+  "artifact_paths": {
+    "runtime_root": "end_to_end/artifacts",
+    "lightgbm_model": "end_to_end/artifacts/lightgbm_model.joblib",
+    "adaboost_model": "end_to_end/artifacts/adaboost_model.joblib",
+    "event_gnn_state_dict": "models/ssfd_validated_ensemble/event_gnn/ssfd_event_gnn_model.pt",
+    "lightgbm_calibrator": "end_to_end/artifacts/lightgbm_calibrator.joblib",
+    "adaboost_calibrator": "end_to_end/artifacts/adaboost_calibrator.joblib",
+    "event_gnn_calibrator": "end_to_end/artifacts/event_gnn_calibrator.joblib",
+    "metadata": "end_to_end/artifacts/runtime_metadata.json"
   },
   "notes": {
-    "calibration_status": "Pending dedicated validation-time calibration.",
-    "meta_model_status": "Weighted averaging first; stacked meta-model can replace it later."
+    "calibration_status": "Validation-time calibrators are fit from the S-FFSD validated ensemble split and applied before weighted averaging.",
+    "meta_model_status": "Weighted averaging is retained as the first production rule. Stacking can be added later if calibration and operational results justify it."
   }
 }

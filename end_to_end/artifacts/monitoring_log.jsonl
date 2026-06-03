@@ -1,0 +1,5 @@
+{"logged_at": "2026-06-02T13:44:34.034063+00:00", "transaction_id": "tx_000001", "latency_ms": 53.51620796136558, "decision": "allow", "final_risk_score": 0.4399601457213276, "history_available": true, "graph_context_available": true}
+{"logged_at": "2026-06-02T13:47:02.800535+00:00", "transaction_id": "tx_000001", "latency_ms": 59.191625099629164, "decision": "allow", "final_risk_score": 0.4399601457213276, "history_available": true, "graph_context_available": true}
+{"logged_at": "2026-06-02T13:47:22.432245+00:00", "transaction_id": "tx_000001", "latency_ms": 38.47454208880663, "decision": "allow", "final_risk_score": 0.4399601457213276, "history_available": true, "graph_context_available": true}
+{"logged_at": "2026-06-02T13:47:51.159814+00:00", "transaction_id": "tx_000001", "latency_ms": 41.04304197244346, "decision": "allow", "final_risk_score": 0.4399601457213276, "history_available": true, "graph_context_available": true}
+{"logged_at": "2026-06-02T13:47:51.171288+00:00", "transaction_id": "tx_000001", "latency_ms": 38.721333956345916, "decision": "allow", "final_risk_score": 0.4399601457213276, "history_available": true, "graph_context_available": true}

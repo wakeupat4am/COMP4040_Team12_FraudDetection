@@ -1,13 +1,14 @@
 {
-  "event_id": "evt_000001",
-  "event_time": 63180,
-  "source_id": "S21000",
-  "target_id": "T1400",
-  "amount": 450.0,
-  "location_id": "L110",
-  "type_id": "TP108",
-  "dataset_family": "ssfd",
+  "transaction_id": "tx_000001",
+  "transaction_timestamp": "2026-06-02T10:15:00Z",
+  "sender_id": "S34742",
+  "receiver_id": "T1529",
+  "amount": 0.9,
+  "transaction_location": "L100",
+  "transaction_type": "TP120",
+  "currency": "USD",
+  "channel": "demo",
   "raw_attributes": {
-    "note": "Example request payload. Historical state must still be fetched separately."
+    "note": "Example request payload. Historical and graph context are computed internally."
   }
 }

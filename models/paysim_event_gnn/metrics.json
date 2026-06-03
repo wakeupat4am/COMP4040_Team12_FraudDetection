@@ -1,0 +1,203 @@
+{
+  "metrics": {
+    "accuracy": 0.9814282979130767,
+    "precision": 0.911340206185567,
+    "recall": 0.8911290322580645,
+    "f1": 0.9011213047910296,
+    "roc_auc": 0.9933118427427885,
+    "average_precision": 0.9627339501727983
+  },
+  "confusion_matrix": [
+    [
+      4684,
+      43
+    ],
+    [
+      54,
+      442
+    ]
+  ],
+  "classification_report": "              precision    recall  f1-score   support\n\n           0     0.9886    0.9909    0.9898      4727\n           1     0.9113    0.8911    0.9011       496\n\n    accuracy                         0.9814      5223\n   macro avg     0.9500    0.9410    0.9454      5223\nweighted avg     0.9813    0.9814    0.9813      5223\n",
+  "threshold_used": 0.95,
+  "training_summary": {
+    "best_val_average_precision": 0.9124506011233824,
+    "best_threshold": 0.95,
+    "history": [
+      {
+        "epoch": 1,
+        "train_loss": 1.638633370399475,
+        "val_average_precision": 0.4489414921590058,
+        "val_best_threshold": 0.6,
+        "val_best_f1": 0.5111111111111111
+      },
+      {
+        "epoch": 2,
+        "train_loss": 1.1240339279174805,
+        "val_average_precision": 0.6058429182773708,
+        "val_best_threshold": 0.725,
+        "val_best_f1": 0.5792563600782779
+      },
+      {
+        "epoch": 3,
+        "train_loss": 0.9481825232505798,
+        "val_average_precision": 0.6484861790129963,
+        "val_best_threshold": 0.7999999999999999,
+        "val_best_f1": 0.6134259259259259
+      },
+      {
+        "epoch": 4,
+        "train_loss": 0.8141838312149048,
+        "val_average_precision": 0.6763404181327636,
+        "val_best_threshold": 0.825,
+        "val_best_f1": 0.6393270241850684
+      },
+      {
+        "epoch": 5,
+        "train_loss": 0.7231535911560059,
+        "val_average_precision": 0.6975147150876803,
+        "val_best_threshold": 0.85,
+        "val_best_f1": 0.657314629258517
+      },
+      {
+        "epoch": 6,
+        "train_loss": 0.6731510162353516,
+        "val_average_precision": 0.6843715553570001,
+        "val_best_threshold": 0.875,
+        "val_best_f1": 0.6685934489402697
+      },
+      {
+        "epoch": 7,
+        "train_loss": 0.6268708109855652,
+        "val_average_precision": 0.6365620230782149,
+        "val_best_threshold": 0.9,
+        "val_best_f1": 0.6660268714011516
+      },
+      {
+        "epoch": 8,
+        "train_loss": 0.5663161873817444,
+        "val_average_precision": 0.580821132118955,
+        "val_best_threshold": 0.9,
+        "val_best_f1": 0.6296590007930214
+      },
+      {
+        "epoch": 9,
+        "train_loss": 0.519713819026947,
+        "val_average_precision": 0.5975806525854397,
+        "val_best_threshold": 0.9249999999999999,
+        "val_best_f1": 0.6692913385826772
+      },
+      {
+        "epoch": 10,
+        "train_loss": 0.482636034488678,
+        "val_average_precision": 0.6955968762164476,
+        "val_best_threshold": 0.9249999999999999,
+        "val_best_f1": 0.6990990990990991
+      },
+      {
+        "epoch": 11,
+        "train_loss": 0.44294822216033936,
+        "val_average_precision": 0.7536659792222543,
+        "val_best_threshold": 0.9249999999999999,
+        "val_best_f1": 0.7204399633363886
+      },
+      {
+        "epoch": 12,
+        "train_loss": 0.4147995710372925,
+        "val_average_precision": 0.795541202049611,
+        "val_best_threshold": 0.9249999999999999,
+        "val_best_f1": 0.7495256166982922
+      },
+      {
+        "epoch": 13,
+        "train_loss": 0.3989258110523224,
+        "val_average_precision": 0.8194322582413996,
+        "val_best_threshold": 0.9249999999999999,
+        "val_best_f1": 0.766121270452358
+      },
+      {
+        "epoch": 14,
+        "train_loss": 0.3916034996509552,
+        "val_average_precision": 0.8374347882013837,
+        "val_best_threshold": 0.9249999999999999,
+        "val_best_f1": 0.7774538386783285
+      },
+      {
+        "epoch": 15,
+        "train_loss": 0.37646231055259705,
+        "val_average_precision": 0.8509468625124031,
+        "val_best_threshold": 0.9249999999999999,
+        "val_best_f1": 0.7843511450381679
+      },
+      {
+        "epoch": 16,
+        "train_loss": 0.357867956161499,
+        "val_average_precision": 0.8606048178169166,
+        "val_best_threshold": 0.9249999999999999,
+        "val_best_f1": 0.7837338262476895
+      },
+      {
+        "epoch": 17,
+        "train_loss": 0.3364735245704651,
+        "val_average_precision": 0.8698133317510937,
+        "val_best_threshold": 0.95,
+        "val_best_f1": 0.8008429926238145
+      },
+      {
+        "epoch": 18,
+        "train_loss": 0.32504647970199585,
+        "val_average_precision": 0.8799254942436203,
+        "val_best_threshold": 0.95,
+        "val_best_f1": 0.8154158215010142
+      },
+      {
+        "epoch": 19,
+        "train_loss": 0.3136732280254364,
+        "val_average_precision": 0.8896439087589416,
+        "val_best_threshold": 0.95,
+        "val_best_f1": 0.8191593352883676
+      },
+      {
+        "epoch": 20,
+        "train_loss": 0.29829710721969604,
+        "val_average_precision": 0.8956288095707015,
+        "val_best_threshold": 0.95,
+        "val_best_f1": 0.8193236714975846
+      },
+      {
+        "epoch": 21,
+        "train_loss": 0.2816579043865204,
+        "val_average_precision": 0.8993746639049545,
+        "val_best_threshold": 0.9249999999999999,
+        "val_best_f1": 0.8209764918625678
+      },
+      {
+        "epoch": 22,
+        "train_loss": 0.2787245213985443,
+        "val_average_precision": 0.9031194926800798,
+        "val_best_threshold": 0.9249999999999999,
+        "val_best_f1": 0.8260869565217391
+      },
+      {
+        "epoch": 23,
+        "train_loss": 0.2695263624191284,
+        "val_average_precision": 0.9071615273157311,
+        "val_best_threshold": 0.9249999999999999,
+        "val_best_f1": 0.8297491039426523
+      },
+      {
+        "epoch": 24,
+        "train_loss": 0.26061683893203735,
+        "val_average_precision": 0.9105214350328723,
+        "val_best_threshold": 0.95,
+        "val_best_f1": 0.833641404805915
+      },
+      {
+        "epoch": 25,
+        "train_loss": 0.2503165900707245,
+        "val_average_precision": 0.9124506011233824,
+        "val_best_threshold": 0.95,
+        "val_best_f1": 0.8308823529411765
+      }
+    ]
+  }
+}
