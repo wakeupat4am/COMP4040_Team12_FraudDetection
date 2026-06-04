@@ -5,6 +5,7 @@ __pycache__/
 .mypy_cache/
 .venv/
 venv/
+test/
 
 # Notebook and OS noise
 .ipynb_checkpoints/
@@ -52,6 +53,8 @@ yarn-error.log*
 pnpm-debug.log*
 
 # Local environment files
+.env
+web/.env
 .env.local
 .env.development.local
 .env.test.local

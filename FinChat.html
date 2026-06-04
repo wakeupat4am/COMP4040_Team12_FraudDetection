@@ -1,0 +1,2417 @@
+<!doctype html>
+<html lang="en"><head><script data-od-sandbox-shim="">(function(){
+  function makeStore(){
+    var data = {};
+    var api = {
+      getItem: function(k){ return Object.prototype.hasOwnProperty.call(data, k) ? data[k] : null; },
+      setItem: function(k, v){ data[k] = String(v); },
+      removeItem: function(k){ delete data[k]; },
+      clear: function(){ data = {}; },
+      key: function(i){ return Object.keys(data)[i] || null; }
+    };
+    Object.defineProperty(api, 'length', { get: function(){ return Object.keys(data).length; } });
+    return api;
+  }
+  function tryShim(name){
+    var works = false;
+    try { works = !!window[name] && typeof window[name].getItem === 'function'; void window[name].length; }
+    catch (_) { works = false; }
+    if (works) return;
+    try { Object.defineProperty(window, name, { configurable: true, value: makeStore() }); }
+    catch (_) { try { window[name] = makeStore(); } catch (__) {} }
+  }
+  tryShim('localStorage');
+  tryShim('sessionStorage');
+  document.addEventListener('click', (e) => {
+    if (!e.target || !(e.target instanceof Element)) return;
+    var link = e.target.closest('a[href]');
+    if (!link) return;
+    var href = link.getAttribute('href');
+    if (href === null) return;
+    var isAnchor = href.startsWith('#') || href === '';
+    if (isAnchor) {
+      e.preventDefault();
+      if (href === '' || href === '#') {
+        window.scrollTo({ top: 0 });
+        history.replaceState(null, '', ' ');
+      } else {
+        var targetId = href.slice(1);
+        var target = targetId ? document.getElementById(targetId) : null;
+        if (target) {
+          target.scrollIntoView();
+          location.hash === href && history.replaceState(null, '', ' ');
+          location.hash = href;
+        }
+      }
+    } else if (link.getAttribute('target') === '_blank') {
+      e.preventDefault();
+      let safe = false;
+      try {
+        var url = new URL(href, location.href);
+        safe =
+          url.protocol === 'http:' ||
+          url.protocol === 'https:' ||
+          url.protocol === 'mailto:';
+      } catch (_) {}
+      safe && window.open(href, '_blank', 'noopener,noreferrer');
+    }
+  });
+})();</script>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>FinChat Analytics · B2B retention dashboard</title>
+  <style>
+    :root {
+      --bg: #fafafa;
+      --surface: #ffffff;
+      --fg: #111111;
+      --muted: #6b6b6b;
+      --border: #e5e5e5;
+      --accent: #2f6feb;
+      --accent-on: #ffffff;
+      --accent-hover: color-mix(in oklab, var(--accent), black 8%);
+      --accent-active: color-mix(in oklab, var(--accent), black 14%);
+      --fg-2: var(--fg);
+      --meta: var(--muted);
+      --border-soft: var(--border);
+      --success: #17a34a;
+      --warn: #eab308;
+      --danger: #dc2626;
+      --accent-soft: color-mix(in oklab, var(--accent) 12%, transparent);
+      --fg-soft: color-mix(in oklab, var(--fg) 5%, transparent);
+      --font-display: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+      --font-body: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+      --font-mono: ui-monospace, "JetBrains Mono", monospace;
+      --text-xs: 12px;
+      --text-sm: 14px;
+      --text-base: 16px;
+      --text-lg: 20px;
+      --text-xl: 24px;
+      --text-2xl: 32px;
+      --text-3xl: 48px;
+      --text-4xl: 64px;
+      --leading-body: 1.5;
+      --leading-tight: 1.2;
+      --tracking-display: -0.01em;
+      --space-1: 4px;
+      --space-2: 8px;
+      --space-3: 12px;
+      --space-4: 16px;
+      --space-5: 20px;
+      --space-6: 24px;
+      --space-8: 32px;
+      --space-12: 48px;
+      --space-20: 80px;
+      --section-y-desktop: 80px;
+      --section-y-tablet: 48px;
+      --section-y-phone: 32px;
+      --radius-sm: 8px;
+      --radius-md: 12px;
+      --radius-lg: 16px;
+      --radius-pill: 9999px;
+      --elev-flat: none;
+      --elev-ring: 0 0 0 1px var(--border);
+      --elev-raised: 0 2px 8px color-mix(in oklab, var(--fg), transparent 92%);
+      --focus-ring: 0 0 0 3px color-mix(in oklab, var(--accent), transparent 70%);
+      --motion-fast: 150ms;
+      --motion-base: 200ms;
+      --ease-standard: cubic-bezier(0.2, 0, 0, 1);
+      --container-max: 1200px;
+      --container-gutter-desktop: 24px;
+      --container-gutter-tablet: 16px;
+      --container-gutter-phone: 12px;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; }
+    html { -webkit-text-size-adjust: 100%; scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--fg);
+      font-family: var(--font-body);
+      font-size: var(--text-base);
+      line-height: var(--leading-body);
+      text-rendering: optimizeLegibility;
+      -webkit-font-smoothing: antialiased;
+    }
+    img, svg { display: block; max-width: 100%; }
+    button, input, textarea, select { font: inherit; color: inherit; }
+    button { cursor: pointer; }
+    a { color: inherit; text-decoration: none; }
+    p { text-wrap: pretty; }
+    h1, h2, h3, h4 { text-wrap: balance; margin: 0; font-family: var(--font-display); }
+    :focus-visible { outline: none; box-shadow: var(--focus-ring); }
+
+    .container {
+      max-width: var(--container-max);
+      margin-inline: auto;
+      padding-inline: var(--container-gutter-desktop);
+    }
+    .section {
+      padding-block: var(--section-y-desktop);
+    }
+    .section + .section { border-top: 1px solid var(--border); }
+    .stack { display: flex; flex-direction: column; }
+    .stack > * + * { margin-top: var(--space-4); }
+    .row { display: flex; align-items: center; gap: var(--space-3); }
+    .row-between { display: flex; align-items: center; justify-content: space-between; gap: var(--space-4); }
+    .grid-2 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-4); }
+    .grid-3 { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--space-4); }
+    .grid-4 { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: var(--space-4); }
+    .grid-2-1 { display: grid; grid-template-columns: 1.4fr 0.9fr; gap: var(--space-4); align-items: start; }
+    .grid-1-2 { display: grid; grid-template-columns: 0.9fr 1.4fr; gap: var(--space-4); align-items: start; }
+
+    .topnav {
+      position: sticky;
+      top: 0;
+      z-index: 50;
+      background: color-mix(in oklab, var(--bg) 94%, transparent);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border);
+    }
+    .topnav-inner {
+      min-height: 68px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: var(--space-4);
+    }
+    .brand-mark {
+      display: inline-flex;
+      align-items: center;
+      gap: 12px;
+      min-width: 0;
+    }
+    .brand-wordmark {
+      display: flex;
+      flex-direction: column;
+      min-width: 0;
+    }
+    .brand-wordmark strong {
+      font-size: 17px;
+      font-weight: 600;
+      letter-spacing: -0.01em;
+    }
+    .brand-wordmark span {
+      font-size: 12px;
+      color: var(--muted);
+    }
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: var(--space-2);
+      flex-wrap: wrap;
+    }
+    .nav-links a {
+      padding: 8px 10px;
+      border-radius: var(--radius-sm);
+      color: var(--muted);
+      font-size: 14px;
+      transition: background var(--motion-fast) var(--ease-standard), color var(--motion-fast) var(--ease-standard), border-color var(--motion-fast) var(--ease-standard);
+      border: 1px solid transparent;
+    }
+    .nav-links a:hover {
+      background: var(--surface);
+      color: var(--fg);
+      border-color: var(--border);
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      min-height: 40px;
+      padding: 10px 16px;
+      border-radius: var(--radius-sm);
+      border: 1px solid transparent;
+      font-size: 14px;
+      font-weight: 500;
+      letter-spacing: -0.005em;
+      transition: transform var(--motion-fast) var(--ease-standard), background var(--motion-fast) var(--ease-standard), border-color var(--motion-fast) var(--ease-standard), color var(--motion-fast) var(--ease-standard);
+      white-space: nowrap;
+    }
+    .btn:hover { transform: translateY(-1px); }
+    .btn:active { transform: translateY(0); }
+    .btn-primary {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: var(--accent-on);
+    }
+    .btn-primary:hover { background: var(--accent-hover); border-color: var(--accent-hover); }
+    .btn-secondary {
+      background: var(--surface);
+      border-color: var(--border);
+      color: var(--fg);
+    }
+    .btn-secondary:hover { border-color: var(--fg); }
+    .btn-ghost {
+      background: transparent;
+      border-color: transparent;
+      color: var(--fg);
+      padding-inline: 10px;
+    }
+    .btn-ghost:hover {
+      background: var(--surface);
+      border-color: var(--border);
+    }
+    .btn-arrow::after {
+      content: "→";
+      font-size: 15px;
+      line-height: 1;
+    }
+
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin: 0 0 var(--space-3);
+    }
+    .eyebrow::before {
+      content: "";
+      width: 8px;
+      height: 8px;
+      border-radius: 999px;
+      background: var(--success);
+      box-shadow: 0 0 0 4px color-mix(in oklab, var(--success) 16%, transparent);
+    }
+    .lead {
+      margin: 0;
+      max-width: 62ch;
+      font-size: 18px;
+      line-height: 1.58;
+      color: var(--muted);
+    }
+    .h1, h1 {
+      font-size: clamp(32px, 4vw, 48px);
+      line-height: 1.08;
+      letter-spacing: -0.02em;
+      font-weight: 600;
+    }
+    .h2, h2 {
+      font-size: clamp(24px, 2.4vw, 32px);
+      line-height: 1.12;
+      letter-spacing: -0.015em;
+      font-weight: 600;
+    }
+    .h3, h3 {
+      font-size: 18px;
+      line-height: 1.25;
+      letter-spacing: -0.01em;
+      font-weight: 600;
+    }
+    .meta {
+      font-family: var(--font-mono);
+      font-size: 12px;
+      color: var(--muted);
+      letter-spacing: 0.02em;
+    }
+    .num {
+      font-family: var(--font-mono);
+      font-variant-numeric: tabular-nums;
+    }
+
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      padding: 20px;
+      box-shadow: var(--elev-flat);
+    }
+    .card-flat {
+      background: transparent;
+      border: 0;
+      padding: 0;
+    }
+    .panel-stack > * + * { margin-top: var(--space-4); }
+
+    .shell {
+      display: grid;
+      grid-template-columns: 280px minmax(0, 1fr);
+      gap: var(--space-4);
+      align-items: start;
+    }
+    .sidebar {
+      position: sticky;
+      top: 88px;
+      display: grid;
+      gap: var(--space-4);
+    }
+    .sidebar .card { padding: 18px; }
+    .sidebar-title {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: var(--space-3);
+      margin-bottom: var(--space-3);
+    }
+    .scope-list, .module-list, .meta-list {
+      display: grid;
+      gap: 8px;
+    }
+    .scope-item, .module-item, .meta-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: var(--space-3);
+      padding: 10px 12px;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      background: color-mix(in oklab, var(--surface) 94%, var(--bg));
+    }
+    .scope-item[data-active="true"] {
+      border-color: var(--fg);
+      background: color-mix(in oklab, var(--fg) 3%, var(--surface));
+    }
+    .scope-item strong, .module-item strong, .meta-item strong {
+      font-size: 14px;
+      font-weight: 600;
+    }
+    .scope-item span, .module-item span, .meta-item span {
+      font-size: 12px;
+      color: var(--muted);
+      font-family: var(--font-mono);
+    }
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 5px 10px;
+      border-radius: var(--radius-pill);
+      border: 1px solid var(--border);
+      background: color-mix(in oklab, var(--surface) 92%, var(--bg));
+      color: var(--muted);
+      font-size: 12px;
+      white-space: nowrap;
+    }
+    .pill strong { color: var(--fg); font-weight: 600; }
+    .pill-success { border-color: color-mix(in oklab, var(--success) 24%, var(--border)); background: color-mix(in oklab, var(--success) 8%, var(--surface)); color: color-mix(in oklab, var(--success) 80%, var(--fg)); }
+    .pill-warn { border-color: color-mix(in oklab, var(--warn) 24%, var(--border)); background: color-mix(in oklab, var(--warn) 8%, var(--surface)); color: color-mix(in oklab, var(--warn) 72%, var(--fg)); }
+    .pill-danger { border-color: color-mix(in oklab, var(--danger) 24%, var(--border)); background: color-mix(in oklab, var(--danger) 8%, var(--surface)); color: color-mix(in oklab, var(--danger) 80%, var(--fg)); }
+
+    .hero-shell {
+      display: grid;
+      grid-template-columns: minmax(0, 1.2fr) minmax(0, 0.8fr);
+      gap: var(--space-4);
+      align-items: start;
+    }
+    .hero-copy {
+      display: grid;
+      gap: var(--space-4);
+    }
+    .hero-actions {
+      display: flex;
+      gap: var(--space-3);
+      flex-wrap: wrap;
+    }
+    .hero-meta {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+    .hero-visual {
+      display: grid;
+      gap: var(--space-4);
+    }
+    .hero-visual .card {
+      min-height: 100%;
+    }
+    .hero-visual-top {
+      display: grid;
+      gap: var(--space-3);
+    }
+    .hero-visual-top .visual-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: var(--space-3);
+      padding: 12px 0;
+      border-top: 1px solid var(--border);
+    }
+    .hero-visual-top .visual-row:first-child { border-top: 0; padding-top: 0; }
+    .hero-visual-top .visual-row span:first-child { color: var(--muted); font-size: 13px; }
+    .hero-visual-top .visual-row strong { font-size: 15px; }
+    .visual-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+    }
+    .visual-tile {
+      padding: 14px;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      background: color-mix(in oklab, var(--surface) 96%, var(--bg));
+    }
+    .visual-tile .label {
+      font-size: 12px;
+      color: var(--muted);
+      margin-bottom: 10px;
+      font-family: var(--font-mono);
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+    }
+    .visual-tile .value {
+      font-size: 18px;
+      line-height: 1.1;
+      font-family: var(--font-mono);
+      font-variant-numeric: tabular-nums;
+    }
+    .mini-bars {
+      display: grid;
+      gap: 8px;
+      margin-top: 14px;
+    }
+    .mini-bar {
+      display: grid;
+      grid-template-columns: 72px minmax(0, 1fr) 36px;
+      gap: 10px;
+      align-items: center;
+      font-size: 12px;
+    }
+    .mini-bar > span:first-child {
+      color: var(--muted);
+      font-family: var(--font-mono);
+    }
+    .mini-track {
+      position: relative;
+      height: 9px;
+      border-radius: 999px;
+      background: color-mix(in oklab, var(--border) 72%, var(--bg));
+      overflow: hidden;
+    }
+    .mini-fill {
+      position: absolute;
+      inset: 0 auto 0 0;
+      border-radius: inherit;
+      background: var(--accent);
+    }
+    .mini-value {
+      text-align: right;
+      font-family: var(--font-mono);
+      color: var(--fg);
+    }
+
+    .kpi-grid {
+      display: grid;
+      grid-template-columns: repeat(6, minmax(0, 1fr));
+      gap: 12px;
+    }
+    .kpi {
+      padding: 18px;
+      display: grid;
+      gap: 8px;
+      min-height: 112px;
+    }
+    .kpi .label {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      color: var(--muted);
+      font-size: 13px;
+    }
+    .kpi .value {
+      font-family: var(--font-mono);
+      font-variant-numeric: tabular-nums;
+      font-size: clamp(28px, 3vw, 38px);
+      line-height: 1;
+      letter-spacing: -0.04em;
+      font-weight: 600;
+    }
+    .kpi .delta {
+      font-size: 12px;
+      color: var(--muted);
+    }
+    .trend-card {
+      display: grid;
+      gap: 14px;
+    }
+    .trend-canvas {
+      width: 100%;
+      aspect-ratio: 16 / 7;
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      background:
+        linear-gradient(to bottom, transparent 0, transparent calc(25% - 0.5px), color-mix(in oklab, var(--border) 70%, transparent) calc(25% - 0.5px), color-mix(in oklab, var(--border) 70%, transparent) 25%, transparent 25.5%),
+        linear-gradient(to bottom, transparent 0, transparent calc(50% - 0.5px), color-mix(in oklab, var(--border) 70%, transparent) calc(50% - 0.5px), color-mix(in oklab, var(--border) 70%, transparent) 50%, transparent 50.5%),
+        linear-gradient(to bottom, transparent 0, transparent calc(75% - 0.5px), color-mix(in oklab, var(--border) 70%, transparent) calc(75% - 0.5px), color-mix(in oklab, var(--border) 70%, transparent) 75%, transparent 75.5%),
+        var(--surface);
+      overflow: hidden;
+    }
+    .trend-svg {
+      width: 100%;
+      height: 100%;
+    }
+    .chart-note {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      flex-wrap: wrap;
+      color: var(--muted);
+      font-size: 13px;
+    }
+    .chip-row {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    .chip {
+      padding: 8px 12px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-pill);
+      background: var(--surface);
+      color: var(--muted);
+      font-size: 13px;
+      transition: border-color var(--motion-fast) var(--ease-standard), background var(--motion-fast) var(--ease-standard), color var(--motion-fast) var(--ease-standard);
+    }
+    .chip:hover { border-color: var(--fg); color: var(--fg); }
+    .chip[data-active="true"] {
+      border-color: var(--fg);
+      background: color-mix(in oklab, var(--fg) 3%, var(--surface));
+      color: var(--fg);
+    }
+
+    .module-grid {
+      display: grid;
+      grid-template-columns: 1.1fr 0.9fr 0.8fr;
+      gap: var(--space-4);
+    }
+    .bar-list, .driver-list, .quality-list, .action-list {
+      display: grid;
+      gap: 10px;
+    }
+    .bar-row, .driver-row, .quality-row, .action-row {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 1.1fr;
+      gap: 12px;
+      align-items: center;
+    }
+    .bar-row .name, .driver-row .name, .quality-row .name, .action-row .name {
+      min-width: 0;
+    }
+    .bar-row .name strong, .driver-row .name strong, .quality-row .name strong, .action-row .name strong {
+      display: block;
+      font-size: 14px;
+      font-weight: 600;
+      margin-bottom: 4px;
+    }
+    .bar-row .name span, .driver-row .name span, .quality-row .name span, .action-row .name span {
+      color: var(--muted);
+      font-size: 12px;
+    }
+    .bar-track {
+      height: 10px;
+      border-radius: 999px;
+      background: color-mix(in oklab, var(--border) 75%, var(--bg));
+      overflow: hidden;
+      position: relative;
+    }
+    .bar-fill {
+      position: absolute;
+      inset: 0 auto 0 0;
+      border-radius: inherit;
+      background: var(--accent);
+    }
+    .bar-fill.success { background: var(--success); }
+    .bar-fill.warn { background: var(--warn); }
+    .bar-fill.danger { background: var(--danger); }
+    .bar-fill.muted { background: color-mix(in oklab, var(--fg) 20%, var(--border)); }
+    .bar-fill.soft { background: color-mix(in oklab, var(--accent) 40%, var(--border)); }
+    .bar-value {
+      grid-column: 1 / -1;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      font-size: 12px;
+      color: var(--muted);
+      margin-top: 3px;
+    }
+    .status-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      display: inline-block;
+      margin-right: 8px;
+      background: currentColor;
+    }
+
+    .risk-layout {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: var(--space-4);
+    }
+    .quadrant {
+      min-height: 240px;
+      position: relative;
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      background:
+        linear-gradient(to right, transparent calc(50% - 0.5px), color-mix(in oklab, var(--border) 80%, transparent) calc(50% - 0.5px), color-mix(in oklab, var(--border) 80%, transparent) calc(50% + 0.5px), transparent calc(50% + 0.5px)),
+        linear-gradient(to bottom, transparent calc(50% - 0.5px), color-mix(in oklab, var(--border) 80%, transparent) calc(50% - 0.5px), color-mix(in oklab, var(--border) 80%, transparent) calc(50% + 0.5px), transparent calc(50% + 0.5px)),
+        var(--surface);
+      overflow: hidden;
+    }
+    .quadrant-label {
+      position: absolute;
+      inset-inline-start: 14px;
+      bottom: 12px;
+      color: var(--muted);
+      font-size: 12px;
+      font-family: var(--font-mono);
+    }
+    .quadrant-label.top {
+      top: 12px;
+      bottom: auto;
+    }
+    .quadrant-point {
+      position: absolute;
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      border: 2px solid var(--surface);
+      box-shadow: 0 0 0 1px color-mix(in oklab, var(--fg) 10%, transparent);
+    }
+    .point-a { background: var(--danger); left: 70%; top: 28%; }
+    .point-b { background: var(--warn); left: 46%; top: 55%; }
+    .point-c { background: var(--success); left: 28%; top: 18%; }
+    .point-d { background: var(--accent); left: 81%; top: 62%; }
+    .quadrant-legend {
+      display: grid;
+      gap: 10px;
+      align-content: start;
+    }
+    .legend-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 10px 12px;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      background: color-mix(in oklab, var(--surface) 94%, var(--bg));
+      font-size: 13px;
+    }
+    .legend-row strong { font-weight: 600; }
+
+    .surface-title {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: var(--space-4);
+      margin-bottom: var(--space-4);
+    }
+    .surface-title p {
+      margin: 0;
+      color: var(--muted);
+      max-width: 56ch;
+    }
+    .toolbar {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+    .range-group {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 4px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-pill);
+      background: var(--surface);
+    }
+    .range-btn {
+      min-height: 32px;
+      padding: 6px 12px;
+      border-radius: 999px;
+      border: 1px solid transparent;
+      background: transparent;
+      color: var(--muted);
+      font-size: 13px;
+      transition: background var(--motion-fast) var(--ease-standard), color var(--motion-fast) var(--ease-standard), border-color var(--motion-fast) var(--ease-standard);
+    }
+    .range-btn[data-active="true"] {
+      background: color-mix(in oklab, var(--fg) 4%, var(--surface));
+      color: var(--fg);
+      border-color: var(--border);
+    }
+    .range-btn:hover { color: var(--fg); }
+
+    .assistant-layout {
+      display: grid;
+      grid-template-columns: 0.95fr 1.05fr;
+      gap: var(--space-4);
+      align-items: start;
+    }
+    .assistant-form {
+      display: grid;
+      gap: 12px;
+    }
+    .field {
+      display: grid;
+      gap: 6px;
+    }
+    .field label {
+      font-size: 13px;
+      color: var(--muted);
+    }
+    .input, .textarea {
+      width: 100%;
+      padding: 11px 14px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      background: var(--surface);
+      color: var(--fg);
+      transition: border-color var(--motion-fast) var(--ease-standard), box-shadow var(--motion-fast) var(--ease-standard);
+    }
+    .input:focus-visible, .textarea:focus-visible {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px color-mix(in oklab, var(--accent) 16%, transparent);
+    }
+    .textarea {
+      min-height: 118px;
+      resize: vertical;
+    }
+    .response {
+      display: grid;
+      gap: 14px;
+    }
+    .response-card {
+      padding: 18px;
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      background: color-mix(in oklab, var(--surface) 96%, var(--bg));
+    }
+    .response-list {
+      display: grid;
+      gap: 10px;
+      margin: 0;
+      padding: 0;
+      list-style: none;
+    }
+    .response-list li {
+      display: grid;
+      grid-template-columns: 16px minmax(0, 1fr);
+      gap: 10px;
+      align-items: start;
+      font-size: 14px;
+      color: var(--fg);
+    }
+    .response-list li::before {
+      content: "";
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--success);
+      margin-top: 6px;
+    }
+    .prompt-row {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    .prompt-row .chip { cursor: pointer; }
+
+    .customer-panel {
+      display: grid;
+      gap: 12px;
+    }
+    .customer-toolbar {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 12px;
+      align-items: center;
+    }
+    .customer-filter-row {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    .customer-list {
+      display: grid;
+      gap: 10px;
+    }
+    .customer-row {
+      display: grid;
+      grid-template-columns: 1.3fr 0.78fr 0.76fr 0.62fr 0.68fr 0.68fr 0.68fr 1fr;
+      gap: 10px;
+      align-items: center;
+      padding: 14px 12px;
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      background: var(--surface);
+      transition: border-color var(--motion-fast) var(--ease-standard), background var(--motion-fast) var(--ease-standard), transform var(--motion-fast) var(--ease-standard);
+    }
+    .customer-row:hover {
+      border-color: color-mix(in oklab, var(--fg) 18%, var(--border));
+      transform: translateY(-1px);
+    }
+    .customer-row.is-hidden { display: none; }
+    .customer-primary {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      min-width: 0;
+    }
+    .customer-id {
+      font-family: var(--font-mono);
+      font-size: 12px;
+      color: var(--muted);
+      letter-spacing: 0.03em;
+    }
+    .customer-name {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      min-width: 0;
+    }
+    .avatar {
+      width: 30px;
+      height: 30px;
+      border-radius: 999px;
+      display: grid;
+      place-items: center;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      color: var(--surface);
+      background: color-mix(in oklab, var(--fg) 82%, var(--border));
+      flex: none;
+    }
+    .customer-name strong {
+      display: block;
+      font-size: 14px;
+      font-weight: 600;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .customer-name span {
+      display: block;
+      font-size: 12px;
+      color: var(--muted);
+    }
+    .cell {
+      min-width: 0;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      color: var(--fg);
+      font-variant-numeric: tabular-nums;
+    }
+    .action-cell {
+      display: flex;
+      justify-content: flex-end;
+    }
+    .action-cell .btn { min-height: 34px; padding: 7px 12px; }
+
+    .table-summary {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      flex-wrap: wrap;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .pagefoot {
+      padding-block: var(--space-8);
+      border-top: 1px solid var(--border);
+      color: var(--muted);
+    }
+
+    .sample-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 10px;
+      border-radius: 999px;
+      border: 1px solid color-mix(in oklab, var(--warn) 26%, var(--border));
+      background: color-mix(in oklab, var(--warn) 10%, var(--surface));
+      color: color-mix(in oklab, var(--warn) 74%, var(--fg));
+      font-size: 12px;
+      white-space: nowrap;
+    }
+    .sample-badge::before {
+      content: "";
+      width: 7px;
+      height: 7px;
+      border-radius: 999px;
+      background: var(--warn);
+    }
+
+    .chart-grid {
+      display: grid;
+      gap: 12px;
+    }
+    .chart-header {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      flex-wrap: wrap;
+      align-items: flex-start;
+    }
+    .chart-header p {
+      margin: 2px 0 0;
+      color: var(--muted);
+      font-size: 13px;
+    }
+    .spark-captions {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+      color: var(--muted);
+      font-size: 12px;
+    }
+    .spark-captions span {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .spark-captions span::before {
+      content: "";
+      width: 10px;
+      height: 10px;
+      border-radius: 999px;
+      background: currentColor;
+    }
+
+    .status-card {
+      display: grid;
+      gap: 10px;
+    }
+    .status-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+    }
+    .status-box {
+      padding: 14px;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      background: color-mix(in oklab, var(--surface) 95%, var(--bg));
+    }
+    .status-box .label {
+      display: block;
+      font-size: 12px;
+      color: var(--muted);
+      margin-bottom: 8px;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      font-family: var(--font-mono);
+    }
+    .status-box .value {
+      font-family: var(--font-mono);
+      font-variant-numeric: tabular-nums;
+      font-size: 18px;
+      font-weight: 600;
+      line-height: 1.1;
+    }
+
+    @media (max-width: 1180px) {
+      .shell { grid-template-columns: 1fr; }
+      .sidebar { position: static; }
+      .hero-shell { grid-template-columns: 1fr; }
+      .module-grid { grid-template-columns: 1fr; }
+      .assistant-layout { grid-template-columns: 1fr; }
+      .kpi-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+      .grid-2, .grid-3, .grid-4, .grid-2-1, .grid-1-2 { grid-template-columns: 1fr; }
+    }
+
+    @media (max-width: 760px) {
+      .container { padding-inline: var(--container-gutter-phone); }
+      .section { padding-block: var(--section-y-phone); }
+      .topnav-inner {
+        padding-block: 12px;
+        flex-wrap: wrap;
+      }
+      .nav-links { order: 3; width: 100%; }
+      .nav-links a { flex: 1 1 auto; text-align: center; }
+      .customer-toolbar { grid-template-columns: 1fr; }
+      .customer-row {
+        grid-template-columns: 1fr 1fr;
+        gap: 8px 12px;
+      }
+      .customer-row .cell:nth-child(3),
+      .customer-row .cell:nth-child(4),
+      .customer-row .cell:nth-child(5),
+      .customer-row .cell:nth-child(6) {
+        font-size: 13px;
+      }
+      .customer-row .cell[data-hide-mobile="true"] { display: none; }
+      .action-cell { justify-content: stretch; grid-column: 1 / -1; }
+      .action-cell .btn { width: 100%; }
+      .kpi-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .status-grid { grid-template-columns: 1fr; }
+      .chart-note, .table-summary { flex-direction: column; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      html { scroll-behavior: auto; }
+      *, *::before, *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+        scroll-behavior: auto !important;
+      }
+    }
+  </style>
+<style data-od-tweaks-bridge-style="">
+[data-od-tweaks-hidden] .tw-panel {
+  transform: translateX(calc(100% + 32px)) !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+}
+.tw-restore { display: none !important; }
+</style><script data-od-tweaks-bridge="">(function(){
+  // Synchronously hide BEFORE the artifact body parses so the panel never
+  // flashes on initial paint. The host removes the attribute via postMessage
+  // once it knows the desired state.
+  document.documentElement.setAttribute('data-od-tweaks-hidden', '');
+
+  var suppressEcho = false;
+  var observer = null;
+
+  function panelEl(){ return document.querySelector('.tw-panel'); }
+
+  function applyClassesToPanel(visible){
+    var panel = panelEl();
+    if (panel) panel.classList.toggle('tw-hidden', !visible);
+  }
+
+  function setPanelVisible(visible){
+    suppressEcho = true;
+    document.documentElement.toggleAttribute('data-od-tweaks-hidden', !visible);
+    applyClassesToPanel(visible);
+    // Clear flag after the MutationObserver has had a chance to fire for this
+    // change so we don't echo our own host-driven toggles back to the host.
+    Promise.resolve().then(function(){ suppressEcho = false; });
+  }
+
+  function postState(){
+    var panel = panelEl();
+    if (!panel) return;
+    try {
+      parent.postMessage({
+        type: 'od:tweaks-panel-state',
+        visible: !panel.classList.contains('tw-hidden'),
+      }, '*');
+    } catch (e) {}
+  }
+
+  function postAvailability(){
+    try {
+      parent.postMessage({
+        type: 'od:tweaks-available',
+        available: !!panelEl(),
+      }, '*');
+    } catch (e) {}
+  }
+
+  function attachObserver(){
+    var panel = panelEl();
+    if (!panel || observer) return;
+    observer = new MutationObserver(function(){
+      if (suppressEcho) return;
+      postState();
+    });
+    observer.observe(panel, { attributes: true, attributeFilter: ['class'] });
+  }
+
+  function onReady(){
+    // Capture the panel authored visibility BEFORE we apply the host hidden
+    // attribute. The bridge sets data-od-tweaks-hidden synchronously in head
+    // (before the body parses), so on entry to onReady the attribute is
+    // always present even though the artifact may have authored the panel
+    // as default-visible. Reading the panel class first is the only place
+    // we can still observe the author intent. Then drive the attribute,
+    // classes, and posted state from that captured value so a default
+    // visible tw-panel reports visible:true and the toolbar toggle starts
+    // ON. Issue surfaced in PR #1643 review.
+    var panel = panelEl();
+    var initialVisible = !!panel && !panel.classList.contains('tw-hidden');
+    document.documentElement.toggleAttribute('data-od-tweaks-hidden', !initialVisible);
+    applyClassesToPanel(initialVisible);
+    attachObserver();
+    postAvailability();
+    // Post the captured initial visibility so the toolbar toggle reflects
+    // the default state on mount. Without this the toggle reads OFF while
+    // a default-visible tw-panel artifact clearly shows its panel and the
+    // user would have to click toggle-on then toggle-off to actually hide.
+    postState();
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', onReady);
+  } else {
+    onReady();
+  }
+
+  window.addEventListener('message', function(ev){
+    if (!ev.data || ev.data.type !== 'od:tweaks-panel-visible') return;
+    setPanelVisible(!!ev.data.visible);
+  });
+})();</script></head>
+<body>
+  <header class="topnav" data-od-id="topnav">
+    <div class="container topnav-inner" data-od-id="path-0-0">
+      <div class="brand-mark">
+        <div class="brand-wordmark">
+          <strong>FinChat Analytics</strong>
+          <span>Customer retention intelligence for banks and fintech teams</span>
+        </div>
+      </div>
+
+      <nav class="nav-links" aria-label="Page sections" data-od-id="path-0-0-1">
+        <a href="#overview" data-od-id="path-0-0-1-0">Overview</a>
+        <a href="#risk" data-od-id="path-0-0-1-1">Risk</a>
+        <a href="#customers" data-od-id="path-0-0-1-2">Customers</a>
+        <a href="#assistant" data-od-id="path-0-0-1-3">Assistant</a>
+      </nav>
+
+      <div class="row" style="margin-left: auto; flex-wrap: wrap; justify-content: flex-end;">
+        <span class="sample-badge">Sample data</span>
+        <button class="btn btn-secondary" id="refresh-btn" type="button" data-od-id="path-0-0-2-1">Refresh sample data</button>
+      </div>
+    </div>
+  </header>
+
+  <main id="content" data-od-id="path-1">
+    <section class="section" data-od-id="hero">
+      <div class="container shell" data-od-id="path-1-0-0">
+        <aside class="sidebar" data-od-id="path-1-0-0-0">
+          <div class="card" data-od-id="path-1-0-0-0-0">
+            <div class="sidebar-title">
+              <div>
+                <div class="eyebrow" style="margin-bottom: 10px;">portfolio view</div>
+                <h3 data-od-id="path-1-0-0-0-0-0-0-1">Scope and model stack</h3>
+              </div>
+              <span class="pill pill-success">Live</span>
+            </div>
+            <div class="meta-list">
+              <div class="meta-item">
+                <strong>Dataset scope</strong>
+                <span>Retail banking + fintech</span>
+              </div>
+              <div class="meta-item">
+                <strong>Freshness</strong>
+                <span id="freshness-label" data-od-id="path-1-0-0-0-0-1-1-1">Updated 12 min ago</span>
+              </div>
+              <div class="meta-item">
+                <strong>Model stack</strong>
+                <span>Churn · CLV · Uplift · Survival</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="card panel-stack" data-od-id="path-1-0-0-0-1">
+            <div class="sidebar-title">
+              <h3 data-od-id="path-1-0-0-0-1-0-0">Focus filters</h3>
+              <span class="meta" id="visible-count" data-od-id="path-1-0-0-0-1-0-1">0 visible</span>
+            </div>
+            <div class="scope-list">
+              <button class="scope-item" type="button" data-filter="all" data-od-id="path-1-0-0-0-1-1-0">
+                <strong>All customers</strong><span>12,480</span>
+              </button>
+              <button class="scope-item" type="button" data-filter="high" data-od-id="path-1-0-0-0-1-1-1">
+                <strong>High risk</strong><span>1,284</span>
+              </button>
+              <button class="scope-item" type="button" data-filter="value" data-od-id="path-1-0-0-0-1-1-2">
+                <strong>High CLV</strong><span>2,104</span>
+              </button>
+              <button class="scope-item" type="button" data-filter="promo" data-od-id="path-1-0-0-0-1-1-3">
+                <strong>Campaign targets</strong><span>744</span>
+              </button>
+            </div>
+          </div>
+
+          <div class="card panel-stack" data-od-id="path-1-0-0-0-2">
+            <div class="sidebar-title">
+              <h3 data-od-id="path-1-0-0-0-2-0-0">Model health</h3>
+              <span class="meta">Sample</span>
+            </div>
+            <div class="status-grid">
+              <div class="status-box">
+                <span class="label">AUC-ROC</span>
+                <span class="value num">0.91</span>
+              </div>
+              <div class="status-box">
+                <span class="label">PR-AUC</span>
+                <span class="value num">0.73</span>
+              </div>
+              <div class="status-box">
+                <span class="label">Brier score</span>
+                <span class="value num">0.12</span>
+              </div>
+              <div class="status-box">
+                <span class="label">C-index</span>
+                <span class="value num">0.84</span>
+              </div>
+            </div>
+          </div>
+        </aside>
+
+        <div class="stack" style="gap: var(--space-4);">
+          <div class="hero-shell">
+            <div class="hero-copy">
+              <div>
+                <p class="eyebrow">Customer retention analytics</p>
+                <h1 data-od-id="path-1-0-0-1-0-0-0-1">See which customers are most likely to churn, when they may leave, and where revenue is at risk.</h1>
+                <p class="lead" style="margin-top: 16px;">
+                  FinChat turns churn probability, CLV, survival analysis, RFM, and uplift modeling into a dense portfolio dashboard for bank and fintech teams.
+                </p>
+              </div>
+
+              <div class="hero-meta">
+                <span class="pill"><strong>12,480</strong> customers in scope</span>
+                <span class="pill"><strong>8.4%</strong> churn rate</span>
+                <span class="pill"><strong>2,104</strong> high-value customers</span>
+                <span class="pill"><strong>744</strong> campaign targets</span>
+              </div>
+
+              <div class="hero-actions">
+                <button class="btn btn-primary" type="button" id="export-btn" data-od-id="path-1-0-0-1-0-0-2-0">Export target list</button>
+                <button class="btn btn-secondary" type="button" id="assistant-jump" data-od-id="path-1-0-0-1-0-0-2-1">Open assistant</button>
+                <button class="btn btn-ghost btn-arrow" type="button" id="refresh-mini" data-od-id="path-1-0-0-1-0-0-2-2">Sync portfolio</button>
+              </div>
+            </div>
+
+            <div class="hero-visual">
+              <div class="card hero-visual-top">
+                <div class="visual-row">
+                  <span>Portfolio pulse</span>
+                  <strong class="num" id="pulse-status" data-od-id="path-1-0-0-1-0-1-0-0-1">Stable</strong>
+                </div>
+                <div class="visual-row">
+                  <span>Risk concentration</span>
+                  <strong class="num" id="risk-status" data-od-id="path-1-0-0-1-0-1-0-1-1">18% high-risk cohort</strong>
+                </div>
+                <div class="visual-row">
+                  <span>Retention prioritization</span>
+                  <strong class="num" id="priority-status" data-od-id="path-1-0-0-1-0-1-0-2-1">31 outreach-ready accounts</strong>
+                </div>
+                <div class="visual-row">
+                  <span>Next model refresh</span>
+                  <strong class="num">02:15 UTC</strong>
+                </div>
+              </div>
+
+              <div class="card">
+                <div class="row-between" style="margin-bottom: 16px;">
+                  <div>
+                    <h3 data-od-id="path-1-0-0-1-0-1-1-0-0-0">Segment pressure</h3>
+                    <p class="meta" style="margin-top: 4px;">RFM mix and churn concentration across the portfolio</p>
+                  </div>
+                  <span class="pill pill-warn">Sample</span>
+                </div>
+                <div class="mini-bars">
+                  <div class="mini-bar">
+                    <span>Champions</span>
+                    <div class="mini-track"><span class="mini-fill" style="width: 71%; background: var(--success);"></span></div>
+                    <span class="mini-value">71</span>
+                  </div>
+                  <div class="mini-bar">
+                    <span>At risk</span>
+                    <div class="mini-track"><span class="mini-fill" style="width: 44%; background: var(--warn);"></span></div>
+                    <span class="mini-value">44</span>
+                  </div>
+                  <div class="mini-bar">
+                    <span>Lost</span>
+                    <div class="mini-track"><span class="mini-fill" style="width: 22%; background: var(--danger);"></span></div>
+                    <span class="mini-value">22</span>
+                  </div>
+                  <div class="mini-bar">
+                    <span>Loyal</span>
+                    <div class="mini-track"><span class="mini-fill" style="width: 58%; background: color-mix(in oklab, var(--fg) 35%, var(--border));"></span></div>
+                    <span class="mini-value">58</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="overview" data-od-id="overview">
+      <div class="container stack" style="gap: var(--space-4);" data-od-id="path-1-1-0">
+        <div class="surface-title">
+          <div>
+            <p class="eyebrow">Overview</p>
+            <h2 data-od-id="path-1-1-0-0-0-1">Portfolio health at a glance</h2>
+            <p>Sample metrics shown as a design prototype for customer behavior monitoring and retention planning.</p>
+          </div>
+          <div class="toolbar">
+            <div class="range-group" role="tablist" aria-label="Time range">
+              <button class="range-btn" type="button" data-range="30d" data-active="true" data-od-id="path-1-1-0-0-1-0-0">30D</button>
+              <button class="range-btn" type="button" data-range="90d" data-od-id="path-1-1-0-0-1-0-1">90D</button>
+              <button class="range-btn" type="button" data-range="180d" data-od-id="path-1-1-0-0-1-0-2">180D</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="kpi-grid" aria-label="Portfolio KPIs">
+          <article class="card kpi" data-od-id="path-1-1-0-1-0">
+            <div class="label" data-od-id="path-1-1-0-1-0-0"><span>Total customers</span><span class="pill">Scope</span></div>
+            <div class="value num" data-kpi="total" data-od-id="path-1-1-0-1-0-1">12,480</div>
+            <div class="delta" data-kpi-meta="total" data-od-id="path-1-1-0-1-0-2">sample base, all active and churned accounts</div>
+          </article>
+          <article class="card kpi" data-od-id="path-1-1-0-1-1">
+            <div class="label" data-od-id="path-1-1-0-1-1-0"><span>Active customers</span><span class="pill pill-success">Healthy</span></div>
+            <div class="value num" data-kpi="active" data-od-id="path-1-1-0-1-1-1">10,836</div>
+            <div class="delta" data-kpi-meta="active" data-od-id="path-1-1-0-1-1-2">86.8% of portfolio still transacting</div>
+          </article>
+          <article class="card kpi" data-od-id="path-1-1-0-1-2">
+            <div class="label" data-od-id="path-1-1-0-1-2-0"><span>Churned customers</span><span class="pill pill-danger">Watch</span></div>
+            <div class="value num" data-kpi="churned" data-od-id="path-1-1-0-1-2-1">1,644</div>
+            <div class="delta" data-kpi-meta="churned" data-od-id="path-1-1-0-1-2-2">accounts to exclude from near-term retention spend</div>
+          </article>
+          <article class="card kpi" data-od-id="path-1-1-0-1-3">
+            <div class="label" data-od-id="path-1-1-0-1-3-0"><span>Churn rate</span><span class="pill pill-warn">Trend</span></div>
+            <div class="value num" data-kpi="rate" data-od-id="path-1-1-0-1-3-1">8.4%</div>
+            <div class="delta" data-kpi-meta="rate" data-od-id="path-1-1-0-1-3-2">down 0.7 pts from the prior snapshot</div>
+          </article>
+          <article class="card kpi" data-od-id="path-1-1-0-1-4">
+            <div class="label" data-od-id="path-1-1-0-1-4-0"><span>Average tenure</span><span class="pill">Months</span></div>
+            <div class="value num" data-kpi="tenure" data-od-id="path-1-1-0-1-4-1">29.4</div>
+            <div class="delta" data-kpi-meta="tenure" data-od-id="path-1-1-0-1-4-2">relationship length across the selected scope</div>
+          </article>
+          <article class="card kpi" data-od-id="path-1-1-0-1-5">
+            <div class="label" data-od-id="path-1-1-0-1-5-0"><span>High-value at risk</span><span class="pill pill-danger">Priority</span></div>
+            <div class="value num" data-kpi="priority" data-od-id="path-1-1-0-1-5-1">31</div>
+            <div class="delta" data-kpi-meta="priority" data-od-id="path-1-1-0-1-5-2">high CLV customers with elevated churn probability</div>
+          </article>
+        </div>
+
+        <div class="grid-2-1">
+          <article class="card trend-card" data-od-id="path-1-1-0-2-0">
+            <div class="chart-header" data-od-id="path-1-1-0-2-0-0">
+              <div>
+                <h3 data-od-id="path-1-1-0-2-0-0-0-0">Transaction value and activity trend</h3>
+                <p>Rolling sample trend across the selected reporting window</p>
+              </div>
+              <span class="pill">Sparkline</span>
+            </div>
+            <div class="trend-canvas" data-od-id="path-1-1-0-2-0-1">
+              <svg class="trend-svg" id="trend-svg" viewBox="0 0 840 300" preserveAspectRatio="none" aria-hidden="true" data-od-id="path-1-1-0-2-0-1-0"></svg>
+            </div>
+            <div class="chart-note" data-od-id="path-1-1-0-2-0-2">
+              <span>Solid line: transaction value</span>
+              <span>Dashed grid: quarter marks</span>
+              <span class="num" id="trend-label" data-od-id="path-1-1-0-2-0-2-2">30-day sample portfolio</span>
+            </div>
+          </article>
+
+          <article class="card chart-grid" data-od-id="path-1-1-0-2-1">
+            <div class="chart-header" data-od-id="path-1-1-0-2-1-0">
+              <div>
+                <h3 data-od-id="path-1-1-0-2-1-0-0-0">Segment pressure map</h3>
+                <p>Churn concentration by RFM segment</p>
+              </div>
+              <span class="pill">Mix</span>
+            </div>
+            <div class="bar-list" id="segment-bars" data-od-id="path-1-1-0-2-1-1">
+              <div class="bar-row" data-od-id="path-1-1-0-2-1-1-0">
+                <div class="name">
+                  <strong>Champions</strong>
+                  <span>High value, low churn pressure</span>
+                </div>
+                <div>
+                  <div class="bar-track"><span class="bar-fill success" data-bar="segment-champions" style="width: 72%;"></span></div>
+                  <div class="bar-value"><span class="num">72</span><span class="meta">share</span></div>
+                </div>
+              </div>
+              <div class="bar-row" data-od-id="path-1-1-0-2-1-1-1">
+                <div class="name">
+                  <strong>Loyal customers</strong>
+                  <span>Steady spend and repeat activity</span>
+                </div>
+                <div>
+                  <div class="bar-track"><span class="bar-fill muted" data-bar="segment-loyal" style="width: 58%;"></span></div>
+                  <div class="bar-value"><span class="num">58</span><span class="meta">share</span></div>
+                </div>
+              </div>
+              <div class="bar-row" data-od-id="path-1-1-0-2-1-1-2">
+                <div class="name">
+                  <strong>Potential loyalists</strong>
+                  <span>Likely to improve with nudge or offer</span>
+                </div>
+                <div>
+                  <div class="bar-track"><span class="bar-fill soft" data-bar="segment-potential" style="width: 46%;"></span></div>
+                  <div class="bar-value"><span class="num">46</span><span class="meta">share</span></div>
+                </div>
+              </div>
+              <div class="bar-row" data-od-id="path-1-1-0-2-1-1-3">
+                <div class="name">
+                  <strong>At risk</strong>
+                  <span>Highest retention priority cohort</span>
+                </div>
+                <div>
+                  <div class="bar-track"><span class="bar-fill warn" data-bar="segment-risk" style="width: 44%;"></span></div>
+                  <div class="bar-value"><span class="num">44</span><span class="meta">share</span></div>
+                </div>
+              </div>
+            </div>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="risk" data-od-id="risk">
+      <div class="container stack" style="gap: var(--space-4);" data-od-id="path-1-2-0">
+        <div class="surface-title">
+          <div>
+            <p class="eyebrow">Risk and value</p>
+            <h2 data-od-id="path-1-2-0-0-0-1">Churn drivers, survival timing, and model quality</h2>
+            <p>Built for data teams and growth operators who need to decide who to contact, when to contact them, and why.</p>
+          </div>
+          <span class="pill pill-danger">High-risk cohort prioritized</span>
+        </div>
+
+        <div class="module-grid">
+          <article class="card chart-grid" data-od-id="path-1-2-0-1-0">
+            <div class="chart-header" data-od-id="path-1-2-0-1-0-0">
+              <div>
+                <h3 data-od-id="path-1-2-0-1-0-0-0-0">Top churn drivers</h3>
+                <p>Feature importance from the churn model</p>
+              </div>
+              <span class="pill">Explainability</span>
+            </div>
+            <div class="driver-list" id="driver-list" data-od-id="path-1-2-0-1-0-1">
+              <div class="driver-row" data-od-id="path-1-2-0-1-0-1-0">
+                <div class="name">
+                  <strong>Recency gap</strong>
+                  <span>Days since last transaction</span>
+                </div>
+                <div>
+                  <div class="bar-track"><span class="bar-fill danger" data-driver="recency" style="width: 88%;"></span></div>
+                  <div class="bar-value"><span class="num">88</span><span class="meta">importance</span></div>
+                </div>
+              </div>
+              <div class="driver-row" data-od-id="path-1-2-0-1-0-1-1">
+                <div class="name">
+                  <strong>Tenure volatility</strong>
+                  <span>Short, unstable customer relationships</span>
+                </div>
+                <div>
+                  <div class="bar-track"><span class="bar-fill warn" data-driver="tenure" style="width: 63%;"></span></div>
+                  <div class="bar-value"><span class="num">63</span><span class="meta">importance</span></div>
+                </div>
+              </div>
+              <div class="driver-row" data-od-id="path-1-2-0-1-0-1-2">
+                <div class="name">
+                  <strong>Channel drop-off</strong>
+                  <span>Branch, app, or web activity decline</span>
+                </div>
+                <div>
+                  <div class="bar-track"><span class="bar-fill soft" data-driver="channel" style="width: 49%;"></span></div>
+                  <div class="bar-value"><span class="num">49</span><span class="meta">importance</span></div>
+                </div>
+              </div>
+              <div class="driver-row" data-od-id="path-1-2-0-1-0-1-3">
+                <div class="name">
+                  <strong>Promotion inactivity</strong>
+                  <span>Past offers no longer driving response</span>
+                </div>
+                <div>
+                  <div class="bar-track"><span class="bar-fill muted" data-driver="promo" style="width: 36%;"></span></div>
+                  <div class="bar-value"><span class="num">36</span><span class="meta">importance</span></div>
+                </div>
+              </div>
+            </div>
+          </article>
+
+          <article class="card chart-grid" data-od-id="path-1-2-0-1-1">
+            <div class="chart-header" data-od-id="path-1-2-0-1-1-0">
+              <div>
+                <h3 data-od-id="path-1-2-0-1-1-0-0-0">Survival timing and CLV risk</h3>
+                <p>Where high-value accounts are most likely to fall out of the portfolio</p>
+              </div>
+              <span class="pill">Survival</span>
+            </div>
+            <div class="risk-layout" data-od-id="path-1-2-0-1-1-1">
+              <div class="quadrant" aria-label="CLV vs churn risk map">
+                <span class="quadrant-label top">High CLV</span>
+                <span class="quadrant-label">Low CLV</span>
+                <span class="quadrant-label" style="right: 14px; left: auto;">Low churn risk</span>
+                <span class="quadrant-point point-a"></span>
+                <span class="quadrant-point point-b"></span>
+                <span class="quadrant-point point-c"></span>
+                <span class="quadrant-point point-d"></span>
+              </div>
+              <div class="quadrant-legend">
+                <div class="legend-row">
+                  <strong>High CLV / high churn</strong>
+                  <span class="num">31 accounts</span>
+                </div>
+                <div class="legend-row">
+                  <strong>High CLV / low churn</strong>
+                  <span class="num">184 accounts</span>
+                </div>
+                <div class="legend-row">
+                  <strong>Low CLV / high churn</strong>
+                  <span class="num">96 accounts</span>
+                </div>
+                <div class="legend-row">
+                  <strong>Low CLV / low churn</strong>
+                  <span class="num">314 accounts</span>
+                </div>
+              </div>
+            </div>
+          </article>
+
+          <article class="card chart-grid" data-od-id="path-1-2-0-1-2">
+            <div class="chart-header" data-od-id="path-1-2-0-1-2-0">
+              <div>
+                <h3 data-od-id="path-1-2-0-1-2-0-0-0">Model quality</h3>
+                <p>Churn and survival metrics from the sample registry</p>
+              </div>
+              <span class="pill">MLflow</span>
+            </div>
+            <div class="quality-list" data-od-id="path-1-2-0-1-2-1">
+              <div class="quality-row">
+                <div class="name">
+                  <strong>AUC-ROC</strong>
+                  <span>Ranking quality</span>
+                </div>
+                <div>
+                  <div class="bar-track"><span class="bar-fill success" style="width: 91%;"></span></div>
+                  <div class="bar-value"><span class="num">0.91</span><span class="meta">sample</span></div>
+                </div>
+              </div>
+              <div class="quality-row">
+                <div class="name">
+                  <strong>PR-AUC</strong>
+                  <span>Positive-class precision</span>
+                </div>
+                <div>
+                  <div class="bar-track"><span class="bar-fill soft" style="width: 73%;"></span></div>
+                  <div class="bar-value"><span class="num">0.73</span><span class="meta">sample</span></div>
+                </div>
+              </div>
+              <div class="quality-row">
+                <div class="name">
+                  <strong>Brier score</strong>
+                  <span>Calibration quality</span>
+                </div>
+                <div>
+                  <div class="bar-track"><span class="bar-fill warn" style="width: 24%;"></span></div>
+                  <div class="bar-value"><span class="num">0.12</span><span class="meta">sample</span></div>
+                </div>
+              </div>
+              <div class="quality-row">
+                <div class="name">
+                  <strong>C-index</strong>
+                  <span>Survival model ranking</span>
+                </div>
+                <div>
+                  <div class="bar-track"><span class="bar-fill muted" style="width: 84%;"></span></div>
+                  <div class="bar-value"><span class="num">0.84</span><span class="meta">sample</span></div>
+                </div>
+              </div>
+            </div>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="customers" data-od-id="customers">
+      <div class="container stack" style="gap: var(--space-4);" data-od-id="path-1-3-0">
+        <div class="surface-title">
+          <div>
+            <p class="eyebrow">Customer explorer</p>
+            <h2 data-od-id="path-1-3-0-0-0-1">Rank, filter, and prioritize accounts</h2>
+            <p>Search by customer, segment, city, or action. The list below is intentionally dense, like a working B2B ops tool.</p>
+          </div>
+          <span class="pill">8 visible fields</span>
+        </div>
+
+        <div class="card customer-panel">
+          <div class="customer-toolbar">
+            <label class="field" style="margin: 0;">
+              <span class="meta">Search customer rows</span>
+              <input class="input" id="customer-search" type="search" placeholder="Try: high CLV, at risk, Singapore, loyal" data-od-id="path-1-3-0-1-0-0-1">
+            </label>
+            <div class="customer-filter-row" id="filter-chips" aria-label="Customer filters" data-od-id="path-1-3-0-1-0-1">
+              <button class="chip" type="button" data-chip="all" data-active="true" data-od-id="path-1-3-0-1-0-1-0">All</button>
+              <button class="chip" type="button" data-chip="high" data-od-id="path-1-3-0-1-0-1-1">High risk</button>
+              <button class="chip" type="button" data-chip="value" data-od-id="path-1-3-0-1-0-1-2">High CLV</button>
+              <button class="chip" type="button" data-chip="promo" data-od-id="path-1-3-0-1-0-1-3">Campaign ready</button>
+              <button class="chip" type="button" data-chip="loyal" data-od-id="path-1-3-0-1-0-1-4">Loyal</button>
+            </div>
+          </div>
+
+          <div class="table-summary">
+            <span><strong id="row-count" class="num" data-od-id="path-1-3-0-1-1-0-0">0</strong> accounts matched the current filter</span>
+            <span>Click a row to inspect the recommended action in the assistant pane</span>
+          </div>
+
+          <div class="customer-list" id="customer-list" data-od-id="path-1-3-0-1-2">
+            <article class="customer-row" tabindex="0" data-tags="all high value promo" data-segment="At risk" data-od-id="path-1-3-0-1-2-0">
+              <div class="customer-primary" data-od-id="path-1-3-0-1-2-0-0">
+                <span class="customer-id">CUST-10482</span>
+                <div class="customer-name">
+                  <div class="avatar">AM</div>
+                  <div>
+                    <strong>Anika Mehta</strong>
+                    <span>Premium · Mumbai</span>
+                  </div>
+                </div>
+              </div>
+              <div class="cell" data-od-id="path-1-3-0-1-2-0-1">At risk</div>
+              <div class="cell" data-od-id="path-1-3-0-1-2-0-2">4 mo</div>
+              <div class="cell" data-od-id="path-1-3-0-1-2-0-3">2 d</div>
+              <div class="cell" data-od-id="path-1-3-0-1-2-0-4">0.83</div>
+              <div class="cell" data-od-id="path-1-3-0-1-2-0-5">124k</div>
+              <div class="cell" data-od-id="path-1-3-0-1-2-0-6">0.74</div>
+              <div class="action-cell" data-od-id="path-1-3-0-1-2-0-7">
+                <button class="btn btn-secondary customer-action" type="button" data-query="prioritize retention outreach for a high CLV account" data-od-id="path-1-3-0-1-2-0-7-0">Review action</button>
+              </div>
+            </article>
+
+            <article class="customer-row" tabindex="0" data-tags="all value loyal" data-segment="Champions" data-od-id="path-1-3-0-1-2-1">
+              <div class="customer-primary" data-od-id="path-1-3-0-1-2-1-0">
+                <span class="customer-id">CUST-11820</span>
+                <div class="customer-name">
+                  <div class="avatar">JR</div>
+                  <div>
+                    <strong>Jamal Reed</strong>
+                    <span>Mass · Singapore</span>
+                  </div>
+                </div>
+              </div>
+              <div class="cell" data-od-id="path-1-3-0-1-2-1-1">Champions</div>
+              <div class="cell" data-od-id="path-1-3-0-1-2-1-2">38 mo</div>
+              <div class="cell" data-od-id="path-1-3-0-1-2-1-3">1 d</div>
+              <div class="cell" data-od-id="path-1-3-0-1-2-1-4">0.16</div>
+              <div class="cell" data-od-id="path-1-3-0-1-2-1-5">86k</div>
+              <div class="cell" data-od-id="path-1-3-0-1-2-1-6">0.12</div>
+              <div class="action-cell" data-od-id="path-1-3-0-1-2-1-7">
+                <button class="btn btn-secondary customer-action" type="button" data-query="maintain relationship with a low-risk high-value account" data-od-id="path-1-3-0-1-2-1-7-0">Review action</button>
+              </div>
+            </article>
+
+            <article class="customer-row" tabindex="0" data-tags="all high promo" data-segment="At risk" data-od-id="path-1-3-0-1-2-2">
+              <div class="customer-primary" data-od-id="path-1-3-0-1-2-2-0">
+                <span class="customer-id">CUST-14106</span>
+                <div class="customer-name">
+                  <div class="avatar">SK</div>
+                  <div>
+                    <strong>Sofia Khan</strong>
+                    <span>VIP · Dubai</span>
+                  </div>
+                </div>
+              </div>
+              <div class="cell" data-od-id="path-1-3-0-1-2-2-1">At risk</div>
+              <div class="cell" data-od-id="path-1-3-0-1-2-2-2">11 mo</div>
+              <div class="cell" data-od-id="path-1-3-0-1-2-2-3">5 d</div>
+              <div class="cell" data-od-id="path-1-3-0-1-2-2-4">0.77</div>
+              <div class="cell" data-od-id="path-1-3-0-1-2-2-5">141k</div>
+              <div class="cell" data-od-id="path-1-3-0-1-2-2-6">0.69</div>
+              <div class="action-cell" data-od-id="path-1-3-0-1-2-2-7">
+                <button class="btn btn-secondary customer-action" type="button" data-query="offer a retention promotion to a high uplift customer" data-od-id="path-1-3-0-1-2-2-7-0">Review action</button>
+              </div>
+            </article>
+
+            <article class="customer-row" tabindex="0" data-tags="all loyal value" data-segment="Loyal" data-od-id="path-1-3-0-1-2-3">
+              <div class="customer-primary" data-od-id="path-1-3-0-1-2-3-0">
+                <span class="customer-id">CUST-10931</span>
+                <div class="customer-name">
+                  <div class="avatar">LK</div>
+                  <div>
+                    <strong>Leila Novak</strong>
+                    <span>Premium · Riyadh</span>
+                  </div>
+                </div>
+              </div>
+              <div class="cell" data-od-id="path-1-3-0-1-2-3-1">Loyal</div>
+              <div class="cell" data-od-id="path-1-3-0-1-2-3-2">24 mo</div>
+              <div class="cell" data-od-id="path-1-3-0-1-2-3-3">3 d</div>
+              <div class="cell" data-od-id="path-1-3-0-1-2-3-4">0.28</div>
+              <div class="cell" data-od-id="path-1-3-0-1-2-3-5">94k</div>
+              <div class="cell" data-od-id="path-1-3-0-1-2-3-6">0.21</div>
+              <div class="action-cell" data-od-id="path-1-3-0-1-2-3-7">
+                <button class="btn btn-secondary customer-action" type="button" data-query="keep a loyal customer engaged without expensive offers" data-od-id="path-1-3-0-1-2-3-7-0">Review action</button>
+              </div>
+            </article>
+
+            <article class="customer-row" tabindex="0" data-tags="all high value promo" data-segment="Potential loyalists" data-od-id="path-1-3-0-1-2-4">
+              <div class="customer-primary" data-od-id="path-1-3-0-1-2-4-0">
+                <span class="customer-id">CUST-15344</span>
+                <div class="customer-name">
+                  <div class="avatar">PR</div>
+                  <div>
+                    <strong>Priya Rao</strong>
+                    <span>Mass · Kuala Lumpur</span>
+                  </div>
+                </div>
+              </div>
+              <div class="cell" data-od-id="path-1-3-0-1-2-4-1">Potential loyalists</div>
+              <div class="cell" data-od-id="path-1-3-0-1-2-4-2">8 mo</div>
+              <div class="cell" data-od-id="path-1-3-0-1-2-4-3">7 d</div>
+              <div class="cell" data-od-id="path-1-3-0-1-2-4-4">0.54</div>
+              <div class="cell" data-od-id="path-1-3-0-1-2-4-5">67k</div>
+              <div class="cell" data-od-id="path-1-3-0-1-2-4-6">0.61</div>
+              <div class="action-cell" data-od-id="path-1-3-0-1-2-4-7">
+                <button class="btn btn-secondary customer-action" type="button" data-query="use a low-cost reactivation offer for a promising account" data-od-id="path-1-3-0-1-2-4-7-0">Review action</button>
+              </div>
+            </article>
+
+            <article class="customer-row" tabindex="0" data-tags="all high value" data-segment="High value" data-od-id="path-1-3-0-1-2-5">
+              <div class="customer-primary" data-od-id="path-1-3-0-1-2-5-0">
+                <span class="customer-id">CUST-16810</span>
+                <div class="customer-name">
+                  <div class="avatar">DN</div>
+                  <div>
+                    <strong>Daniel Nguyen</strong>
+                    <span>VIP · Hanoi</span>
+                  </div>
+                </div>
+              </div>
+              <div class="cell" data-od-id="path-1-3-0-1-2-5-1">High value</div>
+              <div class="cell" data-od-id="path-1-3-0-1-2-5-2">52 mo</div>
+              <div class="cell" data-od-id="path-1-3-0-1-2-5-3">2 d</div>
+              <div class="cell" data-od-id="path-1-3-0-1-2-5-4">0.22</div>
+              <div class="cell" data-od-id="path-1-3-0-1-2-5-5">156k</div>
+              <div class="cell" data-od-id="path-1-3-0-1-2-5-6">0.10</div>
+              <div class="action-cell" data-od-id="path-1-3-0-1-2-5-7">
+                <button class="btn btn-secondary customer-action" type="button" data-query="protect a high value account and avoid discounting" data-od-id="path-1-3-0-1-2-5-7-0">Review action</button>
+              </div>
+            </article>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="assistant" data-od-id="assistant">
+      <div class="container stack" style="gap: var(--space-4);" data-od-id="path-1-4-0">
+        <div class="surface-title">
+          <div>
+            <p class="eyebrow">Natural language analytics</p>
+            <h2 data-od-id="path-1-4-0-0-0-1">Ask the portfolio a business question</h2>
+            <p>The assistant uses the same customer data, churn model, CLV model, and recommendation logic as the dashboard cards above.</p>
+          </div>
+          <span class="pill pill-success">Query-ready</span>
+        </div>
+
+        <div class="assistant-layout">
+          <div class="card assistant-form">
+            <div class="field">
+              <label for="assistant-question">Ask FinChat Analytics</label>
+              <textarea class="textarea" id="assistant-question" placeholder="Which customers have the highest churn risk and still have high CLV?" data-od-id="path-1-4-0-1-0-0-1"></textarea>
+            </div>
+            <div class="prompt-row" aria-label="Suggested prompts">
+              <button class="chip" type="button" data-prompt="Which customers are most likely to churn?" data-od-id="path-1-4-0-1-0-1-0">Churn risk</button>
+              <button class="chip" type="button" data-prompt="Show high-value customers who have not transacted recently." data-od-id="path-1-4-0-1-0-1-1">High-value inactive</button>
+              <button class="chip" type="button" data-prompt="Which segment has the highest churn rate?" data-od-id="path-1-4-0-1-0-1-2">Segment comparison</button>
+              <button class="chip" type="button" data-prompt="Which customers should receive a retention offer?" data-od-id="path-1-4-0-1-0-1-3">Retention offers</button>
+            </div>
+            <div class="row">
+              <button class="btn btn-primary" id="run-question" type="button" data-od-id="path-1-4-0-1-0-2-0">Run analysis</button>
+              <button class="btn btn-secondary" id="clear-question" type="button" data-od-id="path-1-4-0-1-0-2-1">Clear</button>
+            </div>
+            <div class="response-card">
+              <div class="row-between" style="margin-bottom: 12px;">
+                <h3 data-od-id="path-1-4-0-1-0-3-0-0">Result preview</h3>
+                <span class="pill">Sample answer</span>
+              </div>
+              <p class="meta" id="assistant-status" data-od-id="path-1-4-0-1-0-3-1">Ready to answer a customer analytics question.</p>
+              <ul class="response-list" id="assistant-answer" data-od-id="path-1-4-0-1-0-3-2">
+                <li>Prompt suggestions are aligned to the dashboard modules.</li>
+                <li>Results will update to show ranked customers, supporting signals, and recommended next actions.</li>
+              </ul>
+            </div>
+          </div>
+
+          <div class="response stack">
+            <div class="card response-card">
+              <div class="row-between" style="margin-bottom: 12px;">
+                <h3 data-od-id="path-1-4-0-1-1-0-0-0">Recommended action queue</h3>
+                <span class="pill pill-danger">31 accounts</span>
+              </div>
+              <div class="action-list">
+                <div class="action-row">
+                  <div class="name">
+                    <strong>High CLV + high churn</strong>
+                    <span>Priority retention calls and relationship review</span>
+                  </div>
+                  <div class="cell" style="text-align: right;">Call script</div>
+                </div>
+                <div class="action-row">
+                  <div class="name">
+                    <strong>High uplift customers</strong>
+                    <span>Offer targeted incentive, not broad discounting</span>
+                  </div>
+                  <div class="cell" style="text-align: right;">Campaign</div>
+                </div>
+                <div class="action-row">
+                  <div class="name">
+                    <strong>Low CLV + high risk</strong>
+                    <span>Automated workflow instead of manual outreach</span>
+                  </div>
+                  <div class="cell" style="text-align: right;">Automation</div>
+                </div>
+              </div>
+            </div>
+
+            <div class="card response-card">
+              <div class="row-between" style="margin-bottom: 12px;">
+                <h3 data-od-id="path-1-4-0-1-1-1-0-0">What the assistant can answer</h3>
+                <span class="pill">SQL-backed</span>
+              </div>
+              <div class="module-list">
+                <div class="module-item">
+                  <strong>Who is most likely to churn?</strong>
+                  <span>ranked list</span>
+                </div>
+                <div class="module-item">
+                  <strong>When are risky customers likely to churn?</strong>
+                  <span>survival curve</span>
+                </div>
+                <div class="module-item">
+                  <strong>Which customers should receive retention offers?</strong>
+                  <span>campaign list</span>
+                </div>
+                <div class="module-item">
+                  <strong>What is driving churn and value?</strong>
+                  <span>feature explanation</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="pagefoot" data-od-id="footer">
+    <div class="container row-between" data-od-id="path-2-0">
+      <span>FinChat Analytics · sample product prototype</span>
+      <span class="meta">Illustrative dataset only · customer retention dashboard · 2026</span>
+    </div>
+  </footer>
+
+  <script>
+    const snapshotData = {
+      "30d": {
+        label: "30-day sample portfolio",
+        freshness: "Updated 12 min ago",
+        pulse: "Stable",
+        risk: "18% high-risk cohort",
+        priority: "31 outreach-ready accounts",
+        kpis: {
+          total: "12,480",
+          active: "10,836",
+          churned: "1,644",
+          rate: "8.4%",
+          tenure: "29.4",
+          priority: "31"
+        },
+        trend: [42, 44, 43, 46, 48, 45, 50, 54, 52, 57, 55, 59, 61],
+        lineMax: 66
+      },
+      "90d": {
+        label: "90-day sample portfolio",
+        freshness: "Updated 28 min ago",
+        pulse: "Watchlist",
+        risk: "21% high-risk cohort",
+        priority: "38 outreach-ready accounts",
+        kpis: {
+          total: "12,712",
+          active: "10,621",
+          churned: "2,091",
+          rate: "10.1%",
+          tenure: "27.8",
+          priority: "38"
+        },
+        trend: [38, 40, 39, 41, 44, 43, 46, 47, 49, 51, 50, 53, 56],
+        lineMax: 60
+      },
+      "180d": {
+        label: "180-day sample portfolio",
+        freshness: "Updated 54 min ago",
+        pulse: "Improving",
+        risk: "15% high-risk cohort",
+        priority: "24 outreach-ready accounts",
+        kpis: {
+          total: "12,936",
+          active: "11,082",
+          churned: "1,854",
+          rate: "9.0%",
+          tenure: "31.1",
+          priority: "24"
+        },
+        trend: [34, 36, 35, 37, 39, 42, 44, 46, 49, 50, 52, 55, 58],
+        lineMax: 62
+      }
+    };
+
+    const customerRows = Array.from(document.querySelectorAll(".customer-row"));
+    const searchInput = document.getElementById("customer-search");
+    const rowCount = document.getElementById("row-count");
+    const visibleCount = document.getElementById("visible-count");
+    const assistantQuestion = document.getElementById("assistant-question");
+    const assistantStatus = document.getElementById("assistant-status");
+    const assistantAnswer = document.getElementById("assistant-answer");
+    const trendLabel = document.getElementById("trend-label");
+    const trendSvg = document.getElementById("trend-svg");
+    const freshnessLabel = document.getElementById("freshness-label");
+    const pulseStatus = document.getElementById("pulse-status");
+    const riskStatus = document.getElementById("risk-status");
+    const priorityStatus = document.getElementById("priority-status");
+    const refreshBtn = document.getElementById("refresh-btn");
+    const refreshMini = document.getElementById("refresh-mini");
+    const exportBtn = document.getElementById("export-btn");
+    const assistantJump = document.getElementById("assistant-jump");
+    const clearQuestion = document.getElementById("clear-question");
+    const runQuestion = document.getElementById("run-question");
+
+    const state = {
+      range: "30d",
+      filter: "all",
+      search: "",
+      activePrompt: ""
+    };
+
+    function formatTrend(values, width, height) {
+      const max = Math.max(...values);
+      const min = Math.min(...values);
+      const step = width / (values.length - 1);
+      const scale = (value) => {
+        if (max === min) return height / 2;
+        return height - ((value - min) / (max - min)) * (height - 48) - 24;
+      };
+      return values.map((value, index) => `${index === 0 ? "M" : "L"} ${Math.round(index * step)} ${Math.round(scale(value))}`).join(" ");
+    }
+
+    function buildTrend(values) {
+      const width = 840;
+      const height = 300;
+      const line = formatTrend(values, width, height);
+      const points = values.map((value, index) => {
+        const max = Math.max(...values);
+        const min = Math.min(...values);
+        const step = width / (values.length - 1);
+        const scale = max === min ? height / 2 : height - ((value - min) / (max - min)) * (height - 48) - 24;
+        return { x: Math.round(index * step), y: Math.round(scale) };
+      });
+
+      const dots = points.map((point, index) => {
+        const isLast = index === points.length - 1;
+        return `<circle cx="${point.x}" cy="${point.y}" r="${isLast ? 5 : 3}" fill="var(--accent)" opacity="${isLast ? "1" : "0.85"}"></circle>`;
+      }).join("");
+
+      const gridLines = [0.25, 0.5, 0.75].map((ratio) => {
+        const y = Math.round(height * ratio);
+        return `<line x1="0" y1="${y}" x2="${width}" y2="${y}" stroke="var(--border)" stroke-dasharray="2 4" />`;
+      }).join("");
+
+      const area = `${line} L 840 300 L 0 300 Z`;
+      trendSvg.innerHTML = `
+        <defs>
+          <linearGradient id="trend-fill" x1="0" x2="0" y1="0" y2="1">
+            <stop offset="0%" stop-color="var(--accent)" stop-opacity="0.18"></stop>
+            <stop offset="100%" stop-color="var(--accent)" stop-opacity="0"></stop>
+          </linearGradient>
+        </defs>
+        <rect width="840" height="300" fill="transparent"></rect>
+        ${gridLines}
+        <path d="${area}" fill="url(#trend-fill)"></path>
+        <path d="${line}" fill="none" stroke="var(--accent)" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"></path>
+        ${dots}
+      `;
+    }
+
+    function setRange(range) {
+      state.range = range;
+      const snapshot = snapshotData[range];
+      document.querySelectorAll(".range-btn").forEach((button) => {
+        button.dataset.active = String(button.dataset.range === range);
+      });
+      document.querySelectorAll("[data-kpi]").forEach((node) => {
+        const key = node.dataset.kpi;
+        if (snapshot.kpis[key]) node.textContent = snapshot.kpis[key];
+      });
+      freshnessLabel.textContent = snapshot.freshness;
+      pulseStatus.textContent = snapshot.pulse;
+      riskStatus.textContent = snapshot.risk;
+      priorityStatus.textContent = snapshot.priority;
+      trendLabel.textContent = snapshot.label;
+      buildTrend(snapshot.trend);
+    }
+
+    function setChipActive(activeChip) {
+      document.querySelectorAll("[data-chip]").forEach((chip) => {
+        chip.dataset.active = String(chip.dataset.chip === activeChip);
+      });
+      document.querySelectorAll("[data-filter]").forEach((button) => {
+        button.dataset.active = String(button.dataset.filter === activeChip);
+      });
+    }
+
+    function setFilter(filter) {
+      state.filter = filter;
+      setChipActive(filter);
+      syncRows();
+    }
+
+    function matchesRow(row, filter, search) {
+      const text = row.textContent.toLowerCase();
+      const tags = (row.dataset.tags || "").toLowerCase();
+      const segment = (row.dataset.segment || "").toLowerCase();
+      const haystack = `${text} ${tags} ${segment}`;
+      const matchSearch = !search || haystack.includes(search);
+      const matchFilter =
+        filter === "all" ||
+        tags.includes(filter) ||
+        segment.includes(filter) ||
+        (filter === "value" && tags.includes("value")) ||
+        (filter === "high" && tags.includes("high")) ||
+        (filter === "promo" && tags.includes("promo")) ||
+        (filter === "loyal" && tags.includes("loyal"));
+      return matchSearch && matchFilter;
+    }
+
+    function syncRows() {
+      const search = state.search.trim().toLowerCase();
+      let visible = 0;
+      customerRows.forEach((row) => {
+        const show = matchesRow(row, state.filter, search);
+        row.classList.toggle("is-hidden", !show);
+        if (show) visible += 1;
+      });
+      rowCount.textContent = String(visible);
+      visibleCount.textContent = `${visible} visible`;
+    }
+
+    function populateAssistant(prompt) {
+      assistantQuestion.value = prompt;
+      state.activePrompt = prompt;
+      assistantStatus.textContent = "Prepared query";
+    }
+
+    function answerForPrompt(text) {
+      const lower = text.toLowerCase();
+      if (lower.includes("churn")) {
+        return {
+          lead: "The highest-risk customers are concentrated in the recency and tenure gap cohorts.",
+          bullets: [
+            "Prioritize accounts with high CLV and a 0.70+ churn probability.",
+            "The strongest drivers are recency gap, tenure volatility, and channel drop-off.",
+            "Use a retention call for high-value accounts and an automated workflow for low-CLV accounts."
+          ]
+        };
+      }
+      if (lower.includes("transacted recently") || lower.includes("inactive") || lower.includes("high-value")) {
+        return {
+          lead: "A small set of high-value accounts has gone quiet and is now the best reactivation target.",
+          bullets: [
+            "Focus on customers with high CLV and a recency score above the portfolio median.",
+            "Avoid expensive offers for low uplift customers; the sample uplift score is already weak there.",
+            "The assistant recommends a low-cost reactivation workflow before any manual outreach."
+          ]
+        };
+      }
+      if (lower.includes("segment")) {
+        return {
+          lead: "At-risk and potential loyalist segments carry the most near-term churn pressure.",
+          bullets: [
+            "Champions and loyal customers retain the highest value density.",
+            "At-risk customers need the fastest intervention because their churn curve steepens earlier.",
+            "Potential loyalists are the best segment for measured offers and onboarding nudges."
+          ]
+        };
+      }
+      if (lower.includes("offer")) {
+        return {
+          lead: "Retention offers should be targeted, not broad. High uplift customers are worth the spend.",
+          bullets: [
+            "Use uplift score to separate customers who will change behavior from those who will not.",
+            "High CLV + high uplift gets a personalized promotion; low uplift stays on a cheaper workflow.",
+            "Campaign targeting should stay tied to expected incremental value, not just churn risk."
+          ]
+        };
+      }
+      return {
+        lead: "Ask about churn, CLV, segments, or retention offers and the assistant will return ranked customers and a recommended action.",
+        bullets: [
+          "Questions are resolved against the same sample models used elsewhere in the dashboard.",
+          "Every answer can be followed by a customer list, supporting features, and a next-step action.",
+          "Use one of the prompt chips to start from a proven question."
+        ]
+      };
+    }
+
+    function renderAssistant(text) {
+      const result = answerForPrompt(text);
+      assistantStatus.textContent = text || "Ready to answer a customer analytics question.";
+      assistantAnswer.innerHTML = `
+        <li><div>${result.lead}</div></li>
+        ${result.bullets.map((bullet) => `<li><div>${bullet}</div></li>`).join("")}
+      `;
+    }
+
+    function scrollToSection(id) {
+      const element = document.getElementById(id);
+      if (!element) return;
+      const top = element.getBoundingClientRect().top + window.scrollY - 76;
+      window.scrollTo({ top, behavior: "smooth" });
+    }
+
+    document.querySelectorAll(".range-btn").forEach((button) => {
+      button.addEventListener("click", () => setRange(button.dataset.range));
+    });
+
+    document.querySelectorAll("[data-chip]").forEach((button) => {
+      button.addEventListener("click", () => {
+        setFilter(button.dataset.chip);
+      });
+    });
+
+    document.querySelectorAll("[data-filter]").forEach((button) => {
+      button.addEventListener("click", () => {
+        setFilter(button.dataset.filter);
+      });
+    });
+
+    searchInput.addEventListener("input", (event) => {
+      state.search = event.target.value;
+      syncRows();
+    });
+
+    document.querySelectorAll(".customer-action").forEach((button) => {
+      button.addEventListener("click", () => {
+        populateAssistant(button.dataset.query || "");
+        renderAssistant(button.dataset.query || "");
+        scrollToSection("assistant");
+      });
+    });
+
+    document.querySelectorAll(".customer-row").forEach((row) => {
+      row.addEventListener("click", (event) => {
+        if (event.target.closest(".customer-action")) return;
+        const primary = row.querySelector(".customer-name strong")?.textContent || "customer";
+        const segment = row.dataset.segment || "customer";
+        populateAssistant(`What should we do for ${primary} in the ${segment} segment?`);
+        renderAssistant(`What should we do for ${primary} in the ${segment} segment?`);
+      });
+      row.addEventListener("keydown", (event) => {
+        if (event.key === "Enter" || event.key === " ") {
+          event.preventDefault();
+          row.click();
+        }
+      });
+    });
+
+    document.querySelectorAll("[data-prompt]").forEach((button) => {
+      button.addEventListener("click", () => {
+        populateAssistant(button.dataset.prompt || "");
+      });
+    });
+
+    runQuestion.addEventListener("click", () => {
+      renderAssistant(assistantQuestion.value.trim());
+    });
+
+    clearQuestion.addEventListener("click", () => {
+      assistantQuestion.value = "";
+      renderAssistant("");
+    });
+
+    assistantJump.addEventListener("click", () => {
+      scrollToSection("assistant");
+    });
+
+    function flashRefresh(label) {
+      const original = label.textContent;
+      label.textContent = "Syncing...";
+      window.setTimeout(() => {
+        label.textContent = original;
+      }, 700);
+    }
+
+    refreshBtn.addEventListener("click", () => {
+      flashRefresh(refreshBtn);
+      const nextRange = state.range === "30d" ? "90d" : state.range === "90d" ? "180d" : "30d";
+      setRange(nextRange);
+    });
+
+    refreshMini.addEventListener("click", () => {
+      flashRefresh(refreshMini);
+      setRange(state.range);
+    });
+
+    exportBtn.addEventListener("click", () => {
+      const csv = [
+        "customer_id,customer_name,segment,city,churn_probability,clv_12m,uplift_score,recommended_action",
+        "CUST-10482,Anika Mehta,At risk,Mumbai,0.83,124000,0.74,Priority retention call",
+        "CUST-14106,Sofia Khan,At risk,Dubai,0.77,141000,0.69,Retention promotion",
+        "CUST-15344,Priya Rao,Potential loyalists,Kuala Lumpur,0.54,67000,0.61,Low-cost reactivation"
+      ].join("\n");
+      const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = "finchat-target-list-sample.csv";
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      URL.revokeObjectURL(url);
+      exportBtn.textContent = "Exported";
+      window.setTimeout(() => {
+        exportBtn.textContent = "Export target list";
+      }, 1200);
+    });
+
+    setRange("30d");
+    setChipActive("all");
+    syncRows();
+    renderAssistant("");
+  </script>
+
+
+<script data-od-snapshot-bridge="">(function(){
+  var SNAPSHOT_STYLE_PROPS = [
+    'display','position','box-sizing','width','height','min-width','max-width','min-height','max-height',
+    'margin','margin-top','margin-right','margin-bottom','margin-left',
+    'padding','padding-top','padding-right','padding-bottom','padding-left',
+    'border','border-top','border-right','border-bottom','border-left','border-radius',
+    'font','font-family','font-size','font-weight','font-style','line-height','letter-spacing',
+    'color','background-color','opacity','transform','transform-origin','overflow','overflow-x','overflow-y',
+    'white-space','text-align','vertical-align','object-fit','object-position',
+    'flex','flex-direction','flex-wrap','flex-grow','flex-shrink','flex-basis',
+    'grid','grid-template-columns','grid-template-rows','grid-column','grid-row',
+    'gap','row-gap','column-gap','align-items','align-content','align-self',
+    'justify-items','justify-content','justify-self','inset','top','right','bottom','left',
+    'z-index','box-shadow','text-shadow'
+  ];
+  function copyComputedStyle(source, target){
+    if (!source || !target || source.nodeType !== 1 || target.nodeType !== 1) return;
+    var computed = window.getComputedStyle(source);
+    var style = target.getAttribute('style') || '';
+    for (var i = 0; i < SNAPSHOT_STYLE_PROPS.length; i++){
+      var prop = SNAPSHOT_STYLE_PROPS[i];
+      var value = computed.getPropertyValue(prop);
+      if (value) style += prop + ':' + value + ';';
+    }
+    target.setAttribute('style', style);
+  }
+  function syncElementState(source, target){
+    var tag = source.tagName ? source.tagName.toLowerCase() : '';
+    if (tag === 'img' && source.currentSrc) target.setAttribute('src', source.currentSrc);
+    if (tag === 'input' || tag === 'textarea') target.setAttribute('value', source.value || '');
+    if (tag === 'canvas') {
+      try {
+        var img = document.createElement('img');
+        img.setAttribute('src', source.toDataURL('image/png'));
+        img.setAttribute('style', target.getAttribute('style') || '');
+        target.parentNode && target.parentNode.replaceChild(img, target);
+      } catch (_) {}
+    }
+  }
+  function inlineSnapshotStyles(originalRoot, cloneRoot){
+    copyComputedStyle(originalRoot, cloneRoot);
+    syncElementState(originalRoot, cloneRoot);
+    var originals = originalRoot.querySelectorAll('*');
+    var clones = cloneRoot.querySelectorAll('*');
+    var count = Math.min(originals.length, clones.length, 3500);
+    for (var i = 0; i < count; i++){
+      copyComputedStyle(originals[i], clones[i]);
+      syncElementState(originals[i], clones[i]);
+    }
+    var scripts = cloneRoot.querySelectorAll('script');
+    for (var s = scripts.length - 1; s >= 0; s--) scripts[s].remove();
+    var links = cloneRoot.querySelectorAll('link[rel~="stylesheet"], link[rel~="preload"], link[rel~="preconnect"]');
+    for (var l = links.length - 1; l >= 0; l--) links[l].remove();
+    var styles = cloneRoot.querySelectorAll('style');
+    for (var st = 0; st < styles.length; st++) {
+      styles[st].textContent = (styles[st].textContent || '')
+        .replace(/@import[^;]+;/gi, '')
+        .replace(/@font-face\s*\{[^}]*\}/gi, '');
+    }
+  }
+  function waitForImages(){
+    var imgs = Array.prototype.slice.call(document.images || []);
+    return Promise.all(imgs.map(function(img){
+      if (img.complete) return Promise.resolve();
+      return new Promise(function(resolve){
+        img.addEventListener('load', resolve, { once: true });
+        img.addEventListener('error', resolve, { once: true });
+      });
+    }));
+  }
+  function scrollOffset(){
+    var doc = document.documentElement;
+    var body = document.body;
+    return {
+      x: Math.max(window.scrollX || 0, doc ? doc.scrollLeft || 0 : 0, body ? body.scrollLeft || 0 : 0),
+      y: Math.max(window.scrollY || 0, doc ? doc.scrollTop || 0 : 0, body ? body.scrollTop || 0 : 0)
+    };
+  }
+  function escapeAttribute(value){
+    return String(value || '').replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;');
+  }
+  function renderSnapshot(id){
+    var w = Math.max(1, window.innerWidth || document.documentElement.clientWidth || 1);
+    var h = Math.max(1, window.innerHeight || document.documentElement.clientHeight || 1);
+    var dpr = window.devicePixelRatio || 1;
+    var docW = Math.max(w, document.documentElement.scrollWidth || 0, document.body ? document.body.scrollWidth : 0);
+    var docH = Math.max(h, document.documentElement.scrollHeight || 0, document.body ? document.body.scrollHeight : 0);
+    var clone = document.documentElement.cloneNode(true);
+    clone.setAttribute('xmlns', 'http://www.w3.org/1999/xhtml');
+    inlineSnapshotStyles(document.documentElement, clone);
+    var scroll = scrollOffset();
+    var cloneBody = clone.querySelector('body');
+    var rootStyle = clone.getAttribute('style') || '';
+    var bodyStyle = cloneBody ? cloneBody.getAttribute('style') || '' : '';
+    var bodyContent = cloneBody ? cloneBody.innerHTML : clone.innerHTML;
+    var wrapperStyle = rootStyle + bodyStyle +
+      'margin:0;position:relative;left:' + (-scroll.x) + 'px;top:' + (-scroll.y) + 'px;' +
+      'width:' + docW + 'px;height:' + docH + 'px;overflow:visible;';
+    var html = '<div xmlns="http://www.w3.org/1999/xhtml" style="' + escapeAttribute(wrapperStyle) + '">' + bodyContent + '</div>';
+    var svg = '<svg xmlns="http://www.w3.org/2000/svg" width="' + w + '" height="' + h + '" viewBox="0 0 ' + w + ' ' + h + '">' +
+      '<foreignObject x="0" y="0" width="' + docW + '" height="' + docH + '">' +
+      html +
+      '</foreignObject></svg>';
+    var img = new Image();
+    img.onload = function(){
+      try {
+        var canvas = document.createElement('canvas');
+        canvas.width = Math.max(1, Math.floor(w * dpr));
+        canvas.height = Math.max(1, Math.floor(h * dpr));
+        var ctx = canvas.getContext('2d');
+        if (!ctx) throw new Error('no 2d context');
+        ctx.scale(dpr, dpr);
+        ctx.drawImage(img, 0, 0, w, h);
+        window.parent.postMessage({ type: 'od:snapshot:result', id: id, dataUrl: canvas.toDataURL('image/png'), w: canvas.width, h: canvas.height }, '*');
+      } catch (err) {
+        window.parent.postMessage({ type: 'od:snapshot:result', id: id, error: String(err && err.message || err) }, '*');
+      }
+    };
+    function encodedSvgDataUrl(){
+      var encoded = encodeURIComponent(svg);
+      return 'data:image/svg+xml;charset=utf-8,' + encoded;
+    }
+    img.onerror = function(){
+      window.parent.postMessage({ type: 'od:snapshot:result', id: id, error: 'snapshot image failed' }, '*');
+    };
+    img.src = encodedSvgDataUrl();
+  }
+  window.addEventListener('message', function(ev){
+    var data = ev && ev.data;
+    if (!data || data.type !== 'od:snapshot' || !data.id) return;
+    waitForImages().then(function(){ renderSnapshot(String(data.id)); });
+  });
+})();</script><script data-od-srcdoc-transport-activation="">(function(){
+  window.addEventListener('message', function(ev){
+    var data = ev && ev.data;
+    if (!data || data.type !== 'od:srcdoc-transport-activate' || typeof data.html !== 'string') return;
+    document.open();
+    document.write(data.html);
+    document.close();
+  });
+})();</script></body></html>

@@ -164,3 +164,16 @@ We will obtain data by instrumenting and exporting from:
 - `scripts/`: one-off or entry-point scripts
 - `src/`: reusable Python package code
 - `tests/`: automated testsout.
+
+## Current Local Run Paths
+
+The repo now has two practical ways to run the fraud workflow stack:
+
+- Simple local development:
+  - backend: `python server.py`
+  - frontend: run `npm install` and `npm run dev` inside `web/`
+- Milestone 6 local stack:
+  - copy `.env.example` to `.env`
+  - run `docker compose up --build`
+
+Detailed local stack instructions, demo credentials, and troubleshooting notes are in [docs/local_stack.md](docs/local_stack.md).
