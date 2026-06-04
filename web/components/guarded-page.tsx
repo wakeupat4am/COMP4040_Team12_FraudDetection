@@ -23,7 +23,7 @@ export function GuardedPage({
 }: GuardedPageProps) {
   const router = useRouter();
   const pathname = usePathname();
-  const { session, status } = useAuth();
+  const { error, session, status } = useAuth();
 
   useEffect(() => {
     if (status === "anonymous") {
@@ -50,6 +50,18 @@ export function GuardedPage({
   }
 
   if (status === "anonymous" || !session || !allowedRoles.includes(session.role)) {
+    if (error) {
+      return (
+        <div className="fullscreen-center">
+          <section className="panel">
+            <p className="eyebrow">Access</p>
+            <h2>Backend role mapping is missing</h2>
+            <p>{error}</p>
+          </section>
+        </div>
+      );
+    }
+
     return (
       <div className="fullscreen-center">
         <section className="panel">

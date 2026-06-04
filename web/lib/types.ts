@@ -4,16 +4,15 @@ export type ReviewStatusValue = "pending" | "reviewed";
 export type ConfirmedLabelValue = "fraud" | "legitimate";
 
 export interface AuthSession {
-  accessToken: string;
+  userId: string;
   role: RoleValue;
-  tokenType: string;
   username: string;
 }
 
-export interface LoginResponse {
-  access_token: string;
-  token_type: string;
+export interface CurrentUserResponse {
+  username: string;
   role: RoleValue;
+  is_active: boolean;
 }
 
 export interface OverviewModelScores {

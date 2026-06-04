@@ -1,10 +1,5 @@
 """Authentication helpers for the backend API."""
 
-from .security import (
-    create_access_token,
-    decode_access_token,
-    hash_password,
-    verify_password,
-)
+from .clerk import decode_clerk_token
 
-__all__ = ["create_access_token", "decode_access_token", "hash_password", "verify_password"]
+__all__ = ["decode_clerk_token"]

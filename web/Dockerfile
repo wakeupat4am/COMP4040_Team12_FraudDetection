@@ -3,9 +3,11 @@ FROM node:22-alpine
 WORKDIR /app
 
 ARG NEXT_PUBLIC_API_BASE_URL=http://localhost:8000
+ARG NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=
 ENV NEXT_PUBLIC_API_BASE_URL=${NEXT_PUBLIC_API_BASE_URL}
+ENV NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=${NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY}
 
-COPY package.json tsconfig.json next-env.d.ts next.config.ts ./
+COPY package.json tsconfig.json next-env.d.ts next.config.ts middleware.ts ./
 
 RUN npm install
 

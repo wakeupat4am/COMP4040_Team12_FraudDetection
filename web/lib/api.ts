@@ -3,8 +3,8 @@ import type {
   CaseDetailResponse,
   CaseListFilters,
   CaseListResponse,
+  CurrentUserResponse,
   FeedbackPayload,
-  LoginResponse,
   MetricsSummaryResponse,
   MonitoringSummaryResponse,
   ScoreRequestPayload,
@@ -84,11 +84,8 @@ async function request<TResponse>(
   return (await response.json()) as TResponse;
 }
 
-export function loginRequest(username: string, password: string): Promise<LoginResponse> {
-  return request<LoginResponse>("/auth/login", {
-    method: "POST",
-    body: JSON.stringify({ username, password }),
-  });
+export function getCurrentUser(token: string): Promise<CurrentUserResponse> {
+  return request<CurrentUserResponse>("/me", { token });
 }
 
 export function scoreCase(token: string, payload: ScoreRequestPayload): Promise<CaseDetailResponse> {

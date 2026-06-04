@@ -46,7 +46,7 @@ def _looks_like_legacy_local_sqlite_schema(database_url: str) -> bool:
             return False
 
         user_columns = {column["name"] for column in inspector.get_columns("users")}
-        return "password_hash" not in user_columns
+        return "password_hash" not in user_columns or "clerk_user_id" not in user_columns
     finally:
         engine.dispose()
 

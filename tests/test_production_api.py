@@ -1,10 +1,13 @@
 from __future__ import annotations
 
+import asyncio
 import json
 import sqlite3
 from pathlib import Path
+from typing import Any
 
-from fastapi.testclient import TestClient
+import httpx
+import jwt
 
 from fraud_detection.api import create_app
 from fraud_detection.config import Settings
@@ -116,27 +119,58 @@ class FakeScoringRuntime:
         }
 
 
-def build_client(tmp_path: Path) -> tuple[TestClient, FakeScoringRuntime, Settings]:
+class ASGITestClient:
+    def __init__(self, app) -> None:
+        self.app = app
+        self._lifespan_context = None
+
+    def __enter__(self) -> "ASGITestClient":
+        self._lifespan_context = self.app.router.lifespan_context(self.app)
+        asyncio.run(self._lifespan_context.__aenter__())
+        return self
+
+    def __exit__(self, exc_type, exc_value, traceback) -> None:
+        if self._lifespan_context is not None:
+            asyncio.run(self._lifespan_context.__aexit__(exc_type, exc_value, traceback))
+
+    def get(self, url: str, **kwargs: Any) -> httpx.Response:
+        return asyncio.run(self._request("GET", url, **kwargs))
+
+    def post(self, url: str, **kwargs: Any) -> httpx.Response:
+        return asyncio.run(self._request("POST", url, **kwargs))
+
+    def options(self, url: str, **kwargs: Any) -> httpx.Response:
+        return asyncio.run(self._request("OPTIONS", url, **kwargs))
+
+    async def _request(self, method: str, url: str, **kwargs: Any) -> httpx.Response:
+        transport = httpx.ASGITransport(app=self.app)
+        async with httpx.AsyncClient(transport=transport, base_url="http://testserver") as client:
+            return await client.request(method, url, **kwargs)
+
+
+
+def build_client(tmp_path: Path) -> tuple[ASGITestClient, FakeScoringRuntime, Settings]:
     runtime = FakeScoringRuntime()
     settings = Settings(
         database_url=f"sqlite:///{(tmp_path / 'fraud_ops.db').as_posix()}",
-        auth_secret="test-secret",
-        auth_token_ttl_seconds=3600,
+        clerk_jwt_key="test-secret",
+        clerk_jwt_algorithms=("HS256",),
+        clerk_issuer=None,
+        clerk_audience=None,
         bootstrap_history=False,
         cors_allowed_origins=("http://localhost:3000",),
         analyst_username="analyst",
-        analyst_password="analyst-pass",
+        analyst_clerk_user_id="user_test_analyst",
         manager_username="admin",
-        manager_password="admin-pass",
+        manager_clerk_user_id="user_test_manager",
     )
     app = create_app(settings=settings, runtime=runtime)
-    return TestClient(app), runtime, settings
+    return ASGITestClient(app), runtime, settings
 
 
-def login(client: TestClient, username: str, password: str) -> str:
-    response = client.post("/auth/login", json={"username": username, "password": password})
-    assert response.status_code == 200
-    return response.json()["access_token"]
+def token_for(clerk_user_id: str | None) -> str:
+    assert clerk_user_id is not None
+    return jwt.encode({"sub": clerk_user_id}, "test-secret", algorithm="HS256")
 
 
 def sample_payload(transaction_id: str, amount: float = 150.0) -> dict[str, object]:
@@ -157,7 +191,7 @@ def sample_payload(transaction_id: str, amount: float = 150.0) -> dict[str, obje
 def test_score_queue_detail_decision_and_rescore_flow(tmp_path: Path) -> None:
     client, runtime, settings = build_client(tmp_path)
     with client:
-        analyst_token = login(client, settings.analyst_username, settings.analyst_password)
+        analyst_token = token_for(settings.analyst_clerk_user_id)
         headers = {"Authorization": f"Bearer {analyst_token}"}
 
         score_response = client.post("/score", json=sample_payload("tx-001"), headers=headers)
@@ -211,7 +245,7 @@ def test_case_filters_and_contracts_remain_compatible(tmp_path: Path) -> None:
     output_schema = json.loads(Path("end_to_end/output_schema.json").read_text(encoding="utf-8"))
 
     with client:
-        analyst_token = login(client, settings.analyst_username, settings.analyst_password)
+        analyst_token = token_for(settings.analyst_clerk_user_id)
         headers = {"Authorization": f"Bearer {analyst_token}"}
         low_amount_payload = sample_payload("tx-002", amount=20.0)
         high_amount_payload = sample_payload("tx-003", amount=200.0)
@@ -236,7 +270,7 @@ def test_case_filters_and_contracts_remain_compatible(tmp_path: Path) -> None:
 def test_score_request_aliases_are_accepted_and_normalized(tmp_path: Path) -> None:
     client, runtime, settings = build_client(tmp_path)
     with client:
-        analyst_token = login(client, settings.analyst_username, settings.analyst_password)
+        analyst_token = token_for(settings.analyst_clerk_user_id)
         headers = {"Authorization": f"Bearer {analyst_token}"}
         aliased_payload = {
             "transaction_id": "tx-alias",
@@ -259,7 +293,7 @@ def test_score_request_aliases_are_accepted_and_normalized(tmp_path: Path) -> No
 def test_conflicting_request_aliases_return_400(tmp_path: Path) -> None:
     client, _, settings = build_client(tmp_path)
     with client:
-        analyst_token = login(client, settings.analyst_username, settings.analyst_password)
+        analyst_token = token_for(settings.analyst_clerk_user_id)
         headers = {"Authorization": f"Bearer {analyst_token}"}
         payload = sample_payload("tx-conflict")
         payload["timestamp"] = "2026-06-03T12:30:00Z"
@@ -271,7 +305,7 @@ def test_conflicting_request_aliases_return_400(tmp_path: Path) -> None:
 def test_explanation_summary_patterns(tmp_path: Path) -> None:
     client, _, settings = build_client(tmp_path)
     with client:
-        analyst_token = login(client, settings.analyst_username, settings.analyst_password)
+        analyst_token = token_for(settings.analyst_clerk_user_id)
         headers = {"Authorization": f"Bearer {analyst_token}"}
         scenarios = [
             (
@@ -317,14 +351,14 @@ def test_explanation_summary_patterns(tmp_path: Path) -> None:
 def test_metrics_require_manager_role(tmp_path: Path) -> None:
     client, _, settings = build_client(tmp_path)
     with client:
-        analyst_token = login(client, settings.analyst_username, settings.analyst_password)
+        analyst_token = token_for(settings.analyst_clerk_user_id)
         analyst_headers = {"Authorization": f"Bearer {analyst_token}"}
         assert client.post("/score", json=sample_payload("tx-004"), headers=analyst_headers).status_code == 200
 
         analyst_metrics = client.get("/metrics/summary", headers=analyst_headers)
         assert analyst_metrics.status_code == 403
 
-        admin_token = login(client, settings.manager_username, settings.manager_password)
+        admin_token = token_for(settings.manager_clerk_user_id)
         admin_headers = {"Authorization": f"Bearer {admin_token}"}
         admin_metrics = client.get("/metrics/summary", headers=admin_headers)
         assert admin_metrics.status_code == 200
@@ -336,7 +370,7 @@ def test_metrics_require_manager_role(tmp_path: Path) -> None:
 def test_feedback_submission_and_feedback_history(tmp_path: Path) -> None:
     client, _, settings = build_client(tmp_path)
     with client:
-        analyst_token = login(client, settings.analyst_username, settings.analyst_password)
+        analyst_token = token_for(settings.analyst_clerk_user_id)
         headers = {"Authorization": f"Bearer {analyst_token}"}
         assert client.post("/score", json=sample_payload("tx-005"), headers=headers).status_code == 200
 
@@ -359,7 +393,7 @@ def test_feedback_submission_and_feedback_history(tmp_path: Path) -> None:
 def test_feedback_unknown_case_returns_404(tmp_path: Path) -> None:
     client, _, settings = build_client(tmp_path)
     with client:
-        analyst_token = login(client, settings.analyst_username, settings.analyst_password)
+        analyst_token = token_for(settings.analyst_clerk_user_id)
         headers = {"Authorization": f"Bearer {analyst_token}"}
         response = client.post(
             "/cases/missing-case/feedback",
@@ -372,12 +406,12 @@ def test_feedback_unknown_case_returns_404(tmp_path: Path) -> None:
 def test_monitoring_summary_tracks_score_and_rescore_events(tmp_path: Path) -> None:
     client, _, settings = build_client(tmp_path)
     with client:
-        analyst_token = login(client, settings.analyst_username, settings.analyst_password)
+        analyst_token = token_for(settings.analyst_clerk_user_id)
         analyst_headers = {"Authorization": f"Bearer {analyst_token}"}
         assert client.post("/score", json=sample_payload("tx-006"), headers=analyst_headers).status_code == 200
         assert client.post("/cases/tx-006/rescore", headers=analyst_headers).status_code == 200
 
-        admin_token = login(client, settings.manager_username, settings.manager_password)
+        admin_token = token_for(settings.manager_clerk_user_id)
         admin_headers = {"Authorization": f"Bearer {admin_token}"}
         summary_response = client.get("/monitoring/summary", headers=admin_headers)
         assert summary_response.status_code == 200
@@ -393,7 +427,7 @@ def test_monitoring_summary_tracks_score_and_rescore_events(tmp_path: Path) -> N
 def test_monitoring_summary_requires_manager_role(tmp_path: Path) -> None:
     client, _, settings = build_client(tmp_path)
     with client:
-        analyst_token = login(client, settings.analyst_username, settings.analyst_password)
+        analyst_token = token_for(settings.analyst_clerk_user_id)
         analyst_headers = {"Authorization": f"Bearer {analyst_token}"}
         assert client.post("/score", json=sample_payload("tx-007"), headers=analyst_headers).status_code == 200
         response = client.get("/monitoring/summary", headers=analyst_headers)
@@ -404,10 +438,10 @@ def test_cors_allows_local_next_origin(tmp_path: Path) -> None:
     client, _, _ = build_client(tmp_path)
     with client:
         response = client.options(
-            "/auth/login",
+            "/me",
             headers={
                 "Origin": "http://localhost:3000",
-                "Access-Control-Request-Method": "POST",
+                "Access-Control-Request-Method": "GET",
             },
         )
         assert response.status_code == 200
@@ -438,19 +472,21 @@ def test_startup_recovers_legacy_sqlite_without_password_hash(tmp_path: Path) ->
     runtime = FakeScoringRuntime()
     settings = Settings(
         database_url=f"sqlite:///{database_path.as_posix()}",
-        auth_secret="test-secret",
-        auth_token_ttl_seconds=3600,
+        clerk_jwt_key="test-secret",
+        clerk_jwt_algorithms=("HS256",),
+        clerk_issuer=None,
+        clerk_audience=None,
         bootstrap_history=False,
         cors_allowed_origins=("http://localhost:3000",),
         analyst_username="analyst",
-        analyst_password="analyst-pass",
+        analyst_clerk_user_id="user_test_analyst",
         manager_username="admin",
-        manager_password="admin-pass",
+        manager_clerk_user_id="user_test_manager",
     )
 
     app = create_app(settings=settings, runtime=runtime)
-    with TestClient(app) as client:
-        response = client.post("/auth/login", json={"username": "analyst", "password": "analyst-pass"})
+    with ASGITestClient(app) as client:
+        response = client.get("/me", headers={"Authorization": f"Bearer {token_for(settings.analyst_clerk_user_id)}"})
         assert response.status_code == 200
 
     backup_candidates = sorted(tmp_path.glob("legacy_fraud_ops.legacy-*.db"))

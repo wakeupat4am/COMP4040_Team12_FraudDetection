@@ -49,15 +49,10 @@ class ScoreRequest(BaseModel):
         return normalized
 
 
-class LoginRequest(BaseModel):
+class CurrentUserResponse(BaseModel):
     username: str
-    password: str
-
-
-class LoginResponse(BaseModel):
-    access_token: str
-    token_type: str = "bearer"
     role: RoleValue
+    is_active: bool
 
 
 class AnalystDecisionRequest(BaseModel):

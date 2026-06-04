@@ -1,10 +1,11 @@
 # Local Stack Runbook
 
-This repo now supports a Milestone 6 local stack for:
+This repo supports a local stack for:
 
 - `postgres`
 - the FastAPI backend on `http://localhost:8000`
 - the Next.js dashboard on `http://localhost:3000`
+- Clerk browser authentication
 
 ## Quick Start
 
@@ -14,7 +15,19 @@ This repo now supports a Milestone 6 local stack for:
    Copy-Item .env.example .env
    ```
 
-2. Start the local stack:
+2. Create or link a Clerk app, then fill these values in `.env`:
+
+   ```text
+   NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=...
+   CLERK_SECRET_KEY=...
+   CLERK_JWT_KEY="-----BEGIN PUBLIC KEY-----\n...\n-----END PUBLIC KEY-----"
+   ANALYST_CLERK_USER_ID=user_...
+   MANAGER_CLERK_USER_ID=user_...
+   ```
+
+   The `ANALYST_USERNAME` and `MANAGER_USERNAME` values are display names stored in the workflow database.
+
+3. Start the local stack:
 
    ```powershell
    docker compose up --build
@@ -25,34 +38,24 @@ This repo now supports a Milestone 6 local stack for:
    - Web UI: `http://localhost:3000`
    - API health: `http://localhost:8000/health`
 
-## Seeded Demo Users
+## User Mapping
 
-The backend bootstraps two users automatically on startup from environment variables:
+Clerk owns sign-in and session management. The backend maps Clerk user IDs to internal workflow users on startup:
 
-- Analyst:
-  - username: `analyst`
-  - password: `changeme-analyst`
-- Manager admin:
-  - username: `admin`
-  - password: `changeme-admin`
+- `ANALYST_CLERK_USER_ID` -> role `analyst`
+- `MANAGER_CLERK_USER_ID` -> role `manager_admin`
 
-You can override those credentials in `.env` before the first run.
+Use `GET /me` with a Clerk bearer token to verify that the backend role mapping is configured.
 
 ## Demo Transaction Payload
 
 Use the browser score-intake page or the sample payload in [demo_transaction.json](demo_transaction.json).
 
-If you want to submit through the API directly:
+If you want to submit through the API directly, get a Clerk session token from the signed-in browser session or a Clerk test token, then send it as `Authorization: Bearer <token>` against `POST /score`.
 
-```powershell
-Invoke-RestMethod `
-  -Method Post `
-  -Uri http://localhost:8000/auth/login `
-  -ContentType 'application/json' `
-  -Body '{"username":"analyst","password":"changeme-analyst"}'
-```
+## Supabase Postgres
 
-Then use the returned bearer token against `POST /score`.
+For Supabase-backed persistence, set `DATABASE_URL` to the Supabase Postgres connection string. The browser still talks only to FastAPI; do not expose workflow tables through the Supabase Data API unless you also add explicit grants and RLS policies.
 
 ## Troubleshooting
 
@@ -62,9 +65,10 @@ Then use the returned bearer token against `POST /score`.
 - `api` cannot connect to Postgres:
   - verify `DATABASE_URL`, `POSTGRES_USER`, `POSTGRES_PASSWORD`, and `POSTGRES_DB`
   - inspect `docker compose logs postgres api`
-- credentials do not work:
-  - check whether the container was started with different env vars
-  - inspect `docker compose logs api` for bootstrap failures
+- sign-in works but the dashboard shows missing role mapping:
+  - verify the Clerk user ID is present in `ANALYST_CLERK_USER_ID` or `MANAGER_CLERK_USER_ID`
+  - restart the API so startup can seed the internal user row
+  - call `GET /me` with the Clerk bearer token
 - you want a non-Docker fallback:
   - run `python server.py` for the backend
   - run `npm install` and `npm run dev` inside `web/`

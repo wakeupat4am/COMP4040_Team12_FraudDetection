@@ -27,12 +27,37 @@ class UserRepository:
     def get_by_username(self, session: Session, username: str) -> User | None:
         return session.scalar(select(User).where(User.username == username))
 
+    def get_by_clerk_user_id(self, session: Session, clerk_user_id: str) -> User | None:
+        return session.scalar(select(User).where(User.clerk_user_id == clerk_user_id))
+
     def get_by_id(self, session: Session, user_id: int) -> User | None:
         return session.get(User, user_id)
 
-    def create(self, session: Session, username: str, password_hash: str, role: str) -> User:
-        user = User(username=username, password_hash=password_hash, role=role)
+    def create(
+        self,
+        session: Session,
+        username: str,
+        role: str,
+        clerk_user_id: str | None = None,
+        password_hash: str | None = None,
+    ) -> User:
+        user = User(username=username, password_hash=password_hash, role=role, clerk_user_id=clerk_user_id)
         session.add(user)
+        session.flush()
+        return user
+
+    def upsert_clerk_user(self, session: Session, username: str, clerk_user_id: str, role: str) -> User:
+        user = self.get_by_clerk_user_id(session, clerk_user_id)
+        if user is None:
+            user = self.get_by_username(session, username)
+
+        if user is None:
+            return self.create(session, username=username, clerk_user_id=clerk_user_id, role=role)
+
+        user.clerk_user_id = clerk_user_id
+        user.username = username
+        user.role = role
+        user.is_active = True
         session.flush()
         return user
 

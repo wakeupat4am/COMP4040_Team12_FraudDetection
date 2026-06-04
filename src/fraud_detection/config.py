@@ -38,26 +38,30 @@ def default_database_url() -> str:
 @dataclass(frozen=True)
 class Settings:
     database_url: str
-    auth_secret: str
-    auth_token_ttl_seconds: int
+    clerk_jwt_key: str | None
+    clerk_jwt_algorithms: tuple[str, ...]
+    clerk_issuer: str | None
+    clerk_audience: str | None
     bootstrap_history: bool
     cors_allowed_origins: tuple[str, ...]
     analyst_username: str
-    analyst_password: str
+    analyst_clerk_user_id: str | None
     manager_username: str
-    manager_password: str
+    manager_clerk_user_id: str | None
 
 
 @lru_cache
 def get_settings() -> Settings:
     return Settings(
         database_url=os.getenv("DATABASE_URL", default_database_url()),
-        auth_secret=os.getenv("AUTH_SECRET", "dev-only-change-me"),
-        auth_token_ttl_seconds=int(os.getenv("AUTH_TOKEN_TTL_SECONDS", "28800")),
+        clerk_jwt_key=os.getenv("CLERK_JWT_KEY") or os.getenv("CLERK_PEM_PUBLIC_KEY"),
+        clerk_jwt_algorithms=_env_csv("CLERK_JWT_ALGORITHMS", ("RS256",)),
+        clerk_issuer=os.getenv("CLERK_ISSUER"),
+        clerk_audience=os.getenv("CLERK_AUDIENCE"),
         bootstrap_history=_env_bool("BOOTSTRAP_HISTORY", True),
         cors_allowed_origins=_env_csv("CORS_ALLOWED_ORIGINS", ("http://localhost:3000",)),
         analyst_username=os.getenv("ANALYST_USERNAME", "analyst"),
-        analyst_password=os.getenv("ANALYST_PASSWORD", "changeme-analyst"),
+        analyst_clerk_user_id=os.getenv("ANALYST_CLERK_USER_ID"),
         manager_username=os.getenv("MANAGER_USERNAME", "admin"),
-        manager_password=os.getenv("MANAGER_PASSWORD", "changeme-admin"),
+        manager_clerk_user_id=os.getenv("MANAGER_CLERK_USER_ID"),
     )

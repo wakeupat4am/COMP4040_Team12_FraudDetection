@@ -74,7 +74,7 @@ Implemented:
 - validation-time score calibration
 - weighted ensemble scoring
 - explanation generation
-- production FastAPI backend for `/auth/login`, `/score`, `/cases`, `/cases/{transaction_id}`, `/cases/{transaction_id}/decision`, `/cases/{transaction_id}/rescore`, and `/metrics/summary`
+- production FastAPI backend for `/me`, `/score`, `/cases`, `/cases/{transaction_id}`, `/cases/{transaction_id}/decision`, `/cases/{transaction_id}/rescore`, and `/metrics/summary`
 - Postgres/ORM-ready persistence model for cases, score runs, analyst reviews, users, and audit logs
 - monitoring and audit persistence
 

@@ -2,9 +2,9 @@
 
 import type { ReactNode } from "react";
 import { createContext, useContext, useEffect, useState } from "react";
+import { useAuth as useClerkAuth, useClerk, useUser } from "@clerk/nextjs";
 
-import { loginRequest } from "@/lib/api";
-import { clearSession, persistSession, readSession } from "@/lib/session";
+import { getCurrentUser } from "@/lib/api";
 import type { AuthSession } from "@/lib/types";
 
 type AuthStatus = "loading" | "authenticated" | "anonymous";
@@ -12,47 +12,76 @@ type AuthStatus = "loading" | "authenticated" | "anonymous";
 interface AuthContextValue {
   session: AuthSession | null;
   status: AuthStatus;
-  login: (username: string, password: string) => Promise<AuthSession>;
   logout: () => void;
+  error: string | null;
 }
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
+  const { isLoaded, isSignedIn, getToken } = useClerkAuth();
+  const { signOut } = useClerk();
+  const { user } = useUser();
   const [session, setSession] = useState<AuthSession | null>(null);
   const [status, setStatus] = useState<AuthStatus>("loading");
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    const stored = readSession(window.sessionStorage);
-    if (stored) {
-      setSession(stored);
-      setStatus("authenticated");
-      return;
-    }
-    setStatus("anonymous");
-  }, []);
+    let cancelled = false;
 
-  async function login(username: string, password: string): Promise<AuthSession> {
-    const response = await loginRequest(username, password);
-    const nextSession: AuthSession = {
-      accessToken: response.access_token,
-      role: response.role,
-      tokenType: response.token_type,
-      username,
+    async function loadSession() {
+      if (!isLoaded) {
+        setStatus("loading");
+        return;
+      }
+
+      if (!isSignedIn) {
+        setSession(null);
+        setError(null);
+        setStatus("anonymous");
+        return;
+      }
+
+      try {
+        setStatus("loading");
+        const token = await getToken();
+        if (!token) {
+          throw new Error("Clerk did not return a session token.");
+        }
+        const currentUser = await getCurrentUser(token);
+        if (cancelled) {
+          return;
+        }
+        setSession({
+          userId: user?.id ?? "",
+          username: currentUser.username,
+          role: currentUser.role,
+        });
+        setError(null);
+        setStatus("authenticated");
+      } catch (caughtError) {
+        if (cancelled) {
+          return;
+        }
+        setSession(null);
+        setError(caughtError instanceof Error ? caughtError.message : "Unable to load authenticated user.");
+        setStatus("authenticated");
+      }
+    }
+
+    void loadSession();
+    return () => {
+      cancelled = true;
     };
-    persistSession(window.sessionStorage, nextSession);
-    setSession(nextSession);
-    setStatus("authenticated");
-    return nextSession;
-  }
+  }, [getToken, isLoaded, isSignedIn, user?.id]);
 
   function logout(): void {
-    clearSession(window.sessionStorage);
+    void signOut();
     setSession(null);
     setStatus("anonymous");
   }
 
-  return <AuthContext.Provider value={{ session, status, login, logout }}>{children}</AuthContext.Provider>;
+  return <AuthContext.Provider value={{ session, status, logout, error }}>{children}</AuthContext.Provider>;
 }
 
 export function useAuth(): AuthContextValue {

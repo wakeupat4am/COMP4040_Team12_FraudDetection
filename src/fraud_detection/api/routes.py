@@ -9,17 +9,16 @@ from fastapi import APIRouter, Body, Depends, HTTPException, Query, status
 from pydantic import ValidationError
 
 from ..models import User
-from ..services import AuthService, CaseService
-from .dependencies import get_auth_service, get_case_service, require_roles
+from ..services import CaseService
+from .dependencies import get_case_service, require_roles
 from .schemas import (
     AnalystDecisionRequest,
     CaseDetailResponse,
     CaseFeedbackRequest,
     CaseListResponse,
     ConfigResponse,
+    CurrentUserResponse,
     HealthResponse,
-    LoginRequest,
-    LoginResponse,
     MetricsSummaryResponse,
     MonitoringSummaryResponse,
     ScoreRequest,
@@ -30,28 +29,22 @@ router = APIRouter()
 
 
 @router.get("/health", response_model=HealthResponse, tags=["system"])
-def health() -> dict[str, str]:
+async def health() -> dict[str, str]:
     return {"status": "ok"}
 
 
 @router.get("/config", response_model=ConfigResponse, tags=["system"])
-def config(case_service: CaseService = Depends(get_case_service)) -> dict[str, Any]:
+async def config(case_service: CaseService = Depends(get_case_service)) -> dict[str, Any]:
     return case_service.runtime.config_snapshot()
 
 
-@router.post("/auth/login", response_model=LoginResponse, tags=["auth"])
-def login(request: LoginRequest, auth_service: AuthService = Depends(get_auth_service)) -> dict[str, str]:
-    try:
-        user, token = auth_service.authenticate(request.username, request.password)
-        auth_service.session.commit()
-        return {"access_token": token, "token_type": "bearer", "role": user.role}
-    except ValueError as exc:
-        auth_service.session.rollback()
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=str(exc)) from exc
+@router.get("/me", response_model=CurrentUserResponse, tags=["auth"])
+async def me(current_user: User = Depends(require_roles("analyst", "manager_admin"))) -> dict[str, Any]:
+    return {"username": current_user.username, "role": current_user.role, "is_active": current_user.is_active}
 
 
 @router.post("/score", response_model=CaseDetailResponse, tags=["cases"])
-def score_case(
+async def score_case(
     raw_request: dict[str, Any] = Body(...),
     case_service: CaseService = Depends(get_case_service),
     current_user: User = Depends(require_roles("analyst", "manager_admin")),
@@ -73,7 +66,7 @@ def score_case(
 
 
 @router.get("/cases", response_model=CaseListResponse, tags=["cases"])
-def list_cases(
+async def list_cases(
     risk_bucket: str | None = Query(default=None),
     decision: str | None = Query(default=None),
     review_status: str | None = Query(default=None),
@@ -88,7 +81,7 @@ def list_cases(
 
 
 @router.get("/cases/{transaction_id}", response_model=CaseDetailResponse, tags=["cases"])
-def get_case_detail(
+async def get_case_detail(
     transaction_id: str,
     case_service: CaseService = Depends(get_case_service),
     _: User = Depends(require_roles("analyst", "manager_admin")),
@@ -100,7 +93,7 @@ def get_case_detail(
 
 
 @router.post("/cases/{transaction_id}/decision", response_model=CaseDetailResponse, tags=["cases"])
-def submit_decision(
+async def submit_decision(
     transaction_id: str,
     request: AnalystDecisionRequest,
     case_service: CaseService = Depends(get_case_service),
@@ -114,7 +107,7 @@ def submit_decision(
 
 
 @router.post("/cases/{transaction_id}/rescore", response_model=CaseDetailResponse, tags=["cases"])
-def rescore_case(
+async def rescore_case(
     transaction_id: str,
     case_service: CaseService = Depends(get_case_service),
     current_user: User = Depends(require_roles("analyst", "manager_admin")),
@@ -130,7 +123,7 @@ def rescore_case(
 
 
 @router.post("/cases/{transaction_id}/feedback", response_model=CaseDetailResponse, tags=["cases"])
-def submit_feedback(
+async def submit_feedback(
     transaction_id: str,
     request: CaseFeedbackRequest,
     case_service: CaseService = Depends(get_case_service),
@@ -150,7 +143,7 @@ def submit_feedback(
 
 
 @router.get("/metrics/summary", response_model=MetricsSummaryResponse, tags=["metrics"])
-def metrics_summary(
+async def metrics_summary(
     case_service: CaseService = Depends(get_case_service),
     _: User = Depends(require_roles("manager_admin")),
 ) -> dict[str, Any]:
@@ -158,7 +151,7 @@ def metrics_summary(
 
 
 @router.get("/monitoring/summary", response_model=MonitoringSummaryResponse, tags=["monitoring"])
-def monitoring_summary(
+async def monitoring_summary(
     case_service: CaseService = Depends(get_case_service),
     _: User = Depends(require_roles("manager_admin")),
 ) -> dict[str, Any]:

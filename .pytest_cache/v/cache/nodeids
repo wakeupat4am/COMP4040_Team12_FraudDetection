@@ -1,5 +1,17 @@
 [
   "tests/test_end_to_end_state.py::test_event_context_has_single_test_node_and_sequential_event_ids",
   "tests/test_end_to_end_state.py::test_feature_builder_uses_only_prior_history",
+  "tests/test_production_api.py::test_case_filters_and_contracts_remain_compatible",
+  "tests/test_production_api.py::test_conflicting_request_aliases_return_400",
+  "tests/test_production_api.py::test_cors_allows_local_next_origin",
+  "tests/test_production_api.py::test_explanation_summary_patterns",
+  "tests/test_production_api.py::test_feedback_submission_and_feedback_history",
+  "tests/test_production_api.py::test_feedback_unknown_case_returns_404",
+  "tests/test_production_api.py::test_metrics_require_manager_role",
+  "tests/test_production_api.py::test_monitoring_summary_requires_manager_role",
+  "tests/test_production_api.py::test_monitoring_summary_tracks_score_and_rescore_events",
+  "tests/test_production_api.py::test_score_queue_detail_decision_and_rescore_flow",
+  "tests/test_production_api.py::test_score_request_aliases_are_accepted_and_normalized",
+  "tests/test_production_api.py::test_startup_recovers_legacy_sqlite_without_password_hash",
   "tests/test_project_structure.py::test_default_module_placeholders"
 ]
