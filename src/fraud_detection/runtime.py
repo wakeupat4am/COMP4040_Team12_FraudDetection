@@ -17,6 +17,7 @@ from end_to_end.pipeline import (
 )
 
 from .config import get_settings
+from .mlflow_tracking import MLflowTracker
 from .state import HistoricalStateStore, build_default_state_store
 
 
@@ -92,6 +93,8 @@ class ProductionScoringRuntime:
 
     def __init__(self, state_store: HistoricalStateStore | None = None, bootstrap_history: bool | None = None) -> None:
         settings = get_settings()
+        self._settings = settings
+        self._mlflow_tracker = MLflowTracker(settings)
         bootstrap = settings.bootstrap_history if bootstrap_history is None else bootstrap_history
         resolved_state_store = state_store or build_default_state_store()
         self.pipeline = FraudPipeline(
@@ -122,6 +125,7 @@ class ProductionScoringRuntime:
         aligned["threshold"] = review_threshold
         aligned["model_scores_overview"] = _build_model_scores_overview(model_scores)
         aligned["explanation_summary"] = _build_explanation_summary(model_scores, review_threshold)
+        aligned["model_tracking"] = self._mlflow_tracker.current_model_metadata(self.config_snapshot()).as_output_payload()
         return aligned
 
     def score_transaction(self, payload: dict[str, Any], persist_event: bool = True) -> dict[str, Any]:

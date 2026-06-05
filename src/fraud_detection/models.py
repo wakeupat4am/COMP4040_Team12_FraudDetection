@@ -74,6 +74,9 @@ class CaseScoreRun(Base):
     final_risk_score: Mapped[float] = mapped_column(Float)
     risk_bucket: Mapped[str] = mapped_column(String(32))
     decision: Mapped[str] = mapped_column(String(32))
+    mlflow_run_id: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    model_artifact_uri: Mapped[str | None] = mapped_column(String(1024), nullable=True)
+    model_metadata: Mapped[dict | None] = mapped_column(JSON, nullable=True)
     scored_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
 

@@ -48,6 +48,10 @@ class Settings:
     analyst_clerk_user_id: str | None
     manager_username: str
     manager_clerk_user_id: str | None
+    mlflow_enabled: bool
+    mlflow_tracking_uri: str
+    mlflow_experiment_name: str
+    mlflow_model_run_id: str | None
 
 
 @lru_cache
@@ -64,4 +68,8 @@ def get_settings() -> Settings:
         analyst_clerk_user_id=os.getenv("ANALYST_CLERK_USER_ID"),
         manager_username=os.getenv("MANAGER_USERNAME", "admin"),
         manager_clerk_user_id=os.getenv("MANAGER_CLERK_USER_ID"),
+        mlflow_enabled=_env_bool("MLFLOW_ENABLED", False),
+        mlflow_tracking_uri=os.getenv("MLFLOW_TRACKING_URI", "file:///tmp/fraud-detection-mlruns"),
+        mlflow_experiment_name=os.getenv("MLFLOW_EXPERIMENT_NAME", "fraud-detection-production"),
+        mlflow_model_run_id=os.getenv("MLFLOW_MODEL_RUN_ID"),
     )

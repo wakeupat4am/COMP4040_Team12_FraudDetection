@@ -8,9 +8,12 @@ from typing import Any
 
 import httpx
 import jwt
+from sqlalchemy import select
 
 from fraud_detection.api import create_app
 from fraud_detection.config import Settings
+from fraud_detection.database import get_session_factory
+from fraud_detection.models import CaseScoreRun
 
 
 class FakeScoringRuntime:
@@ -108,6 +111,11 @@ class FakeScoringRuntime:
                     "warning": "Historical and graph context are unavailable for this case.",
                 },
             },
+            "model_tracking": {
+                "mlflow_run_id": "test-run-id",
+                "model_artifact_uri": "file:///tmp/test-artifacts",
+                "model_metadata": {"pipeline_profile": "test_profile"},
+            },
         }
         return self._align_output(output)
 
@@ -163,6 +171,10 @@ def build_client(tmp_path: Path) -> tuple[ASGITestClient, FakeScoringRuntime, Se
         analyst_clerk_user_id="user_test_analyst",
         manager_username="admin",
         manager_clerk_user_id="user_test_manager",
+        mlflow_enabled=False,
+        mlflow_tracking_uri="file:///tmp/fraud-detection-test-mlruns",
+        mlflow_experiment_name="fraud-detection-test",
+        mlflow_model_run_id=None,
     )
     app = create_app(settings=settings, runtime=runtime)
     return ASGITestClient(app), runtime, settings
@@ -237,6 +249,16 @@ def test_score_queue_detail_decision_and_rescore_flow(tmp_path: Path) -> None:
         assert rescore_body["latest_analyst_decision"] is None
         assert rescore_body["latest_output"]["final_risk_score"] == 0.42
         assert [call["persist_event"] for call in runtime.calls] == [True, False]
+
+        session = get_session_factory(settings.database_url)()
+        try:
+            score_run = session.scalar(select(CaseScoreRun).order_by(CaseScoreRun.id.asc()))
+            assert score_run is not None
+            assert score_run.mlflow_run_id == "test-run-id"
+            assert score_run.model_artifact_uri == "file:///tmp/test-artifacts"
+            assert score_run.model_metadata == {"pipeline_profile": "test_profile"}
+        finally:
+            session.close()
 
 
 def test_case_filters_and_contracts_remain_compatible(tmp_path: Path) -> None:
@@ -482,6 +504,10 @@ def test_startup_recovers_legacy_sqlite_without_password_hash(tmp_path: Path) ->
         analyst_clerk_user_id="user_test_analyst",
         manager_username="admin",
         manager_clerk_user_id="user_test_manager",
+        mlflow_enabled=False,
+        mlflow_tracking_uri="file:///tmp/fraud-detection-test-mlruns",
+        mlflow_experiment_name="fraud-detection-test",
+        mlflow_model_run_id=None,
     )
 
     app = create_app(settings=settings, runtime=runtime)

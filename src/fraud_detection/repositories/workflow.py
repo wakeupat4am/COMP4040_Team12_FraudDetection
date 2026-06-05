@@ -132,6 +132,7 @@ class WorkflowRepository:
         run_type: str,
         actor_user_id: int | None,
     ) -> CaseScoreRun:
+        model_tracking = output_payload.get("model_tracking", {})
         score_run = CaseScoreRun(
             scored_case_id=scored_case.id,
             triggered_by_user_id=actor_user_id,
@@ -143,6 +144,9 @@ class WorkflowRepository:
             final_risk_score=float(output_payload["final_risk_score"]),
             risk_bucket=output_payload["risk_bucket"],
             decision=output_payload["decision"],
+            mlflow_run_id=model_tracking.get("mlflow_run_id") if isinstance(model_tracking, dict) else None,
+            model_artifact_uri=model_tracking.get("model_artifact_uri") if isinstance(model_tracking, dict) else None,
+            model_metadata=model_tracking.get("model_metadata") if isinstance(model_tracking, dict) else None,
         )
         session.add(score_run)
         session.flush()
