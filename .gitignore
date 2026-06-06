@@ -25,6 +25,14 @@ reports/figures/*
 Final_Report/*.md
 *.md
 migrations/
+FinChat.html
+PRD.md
+productionPlan.md
+milestone.md
+fraud_detection_quick_overview.md
+SUPABASE_CLERK_SETUP.md
+docker-compose.server.yml
+skills-lock.json
 
 # Keep directory placeholders
 !data/raw/.gitkeep
