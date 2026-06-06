@@ -20,15 +20,12 @@ Thumbs.db
 reports/figures/*
 Final_Report/*.md
 *.md
+!README.md
 migrations/
 .agents/skills/
 .codex/
 FinChat.html
 PRD.md
-productionPlan.md
-milestone.md
-fraud_detection_quick_overview.md
-SUPABASE_CLERK_SETUP.md
 docker-compose.server.yml
 skills-lock.json
 
