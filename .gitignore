@@ -17,10 +17,6 @@ Thumbs.db
 .idea/
 
 # Local artifacts
-data/raw/*
-data/interim/*
-data/processed/*
-models/*
 reports/figures/*
 Final_Report/*.md
 *.md
