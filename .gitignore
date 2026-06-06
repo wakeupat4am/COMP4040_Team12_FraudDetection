@@ -24,6 +24,7 @@ models/*
 reports/figures/*
 Final_Report/*.md
 *.md
+migrations/
 
 # Keep directory placeholders
 !data/raw/.gitkeep
