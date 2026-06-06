@@ -21,6 +21,8 @@ reports/figures/*
 Final_Report/*.md
 *.md
 migrations/
+.agents/skills/
+.codex/
 FinChat.html
 PRD.md
 productionPlan.md
