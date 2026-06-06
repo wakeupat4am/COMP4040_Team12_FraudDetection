@@ -3,10 +3,12 @@
 from __future__ import annotations
 
 from contextlib import asynccontextmanager
+from time import sleep
 from typing import TYPE_CHECKING
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from sqlalchemy.exc import OperationalError
 
 from ..config import Settings, get_settings
 from ..database import dispose_engine, get_session_factory, init_db
@@ -22,7 +24,14 @@ def create_app(settings: Settings | None = None, runtime: ProductionScoringRunti
 
     @asynccontextmanager
     async def lifespan(app: FastAPI):
-        init_db(app.state.settings.database_url)
+        for attempt in range(1, 11):
+            try:
+                init_db(app.state.settings.database_url)
+                break
+            except OperationalError as exc:
+                if attempt == 10:
+                    raise
+                sleep(2)
         session = get_session_factory(app.state.settings.database_url)()
         try:
             auth_service = AuthService(session=session, settings=app.state.settings)

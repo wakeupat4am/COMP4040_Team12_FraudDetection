@@ -165,15 +165,20 @@ We will obtain data by instrumenting and exporting from:
 - `src/`: reusable Python package code
 - `tests/`: automated testsout.
 
-## Current Local Run Paths
+## Current Run Paths
 
 The repo now has two practical ways to run the fraud workflow stack:
 
+- Docker + Supabase:
+  - copy `.env.example` to `.env`
+  - set `DATABASE_URL` to your Supabase Postgres connection string
+  - run `docker compose up --build`
+- Docker + local Postgres:
+  - copy `.env.example` to `.env`
+  - set `DATABASE_URL` to the local `postgres` service or leave the compose default
+  - run `docker compose --profile local up --build`
 - Simple local development:
   - backend: `python server.py`
   - frontend: run `npm install` and `npm run dev` inside `web/`
-- Milestone 6 local stack:
-  - copy `.env.example` to `.env`
-  - run `docker compose up --build`
 
 Detailed local stack instructions, demo credentials, and troubleshooting notes are in [docs/local_stack.md](docs/local_stack.md).

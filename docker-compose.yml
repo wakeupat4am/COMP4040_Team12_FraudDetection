@@ -2,6 +2,8 @@ services:
   postgres:
     image: postgres:16-alpine
     restart: unless-stopped
+    profiles:
+      - local
     environment:
       POSTGRES_DB: ${POSTGRES_DB:-fraud_ops}
       POSTGRES_USER: ${POSTGRES_USER:-fraud_app}
@@ -22,9 +24,6 @@ services:
       context: .
       dockerfile: Dockerfile.api
     restart: unless-stopped
-    depends_on:
-      postgres:
-        condition: service_healthy
     environment:
       DATABASE_URL: ${DATABASE_URL:-postgresql+psycopg://fraud_app:fraud_app_password@postgres:5432/fraud_ops}
       CLERK_JWT_KEY: ${CLERK_JWT_KEY:-}
