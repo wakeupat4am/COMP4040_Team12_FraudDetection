@@ -22,6 +22,8 @@ data/interim/*
 data/processed/*
 models/*
 reports/figures/*
+Final_Report/*.md
+*.md
 
 # Keep directory placeholders
 !data/raw/.gitkeep
