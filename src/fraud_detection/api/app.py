@@ -9,14 +9,18 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from ..config import Settings, get_settings
 from ..database import dispose_engine, get_session_factory, init_db
-from ..services import AuthService
+from ..services import AuthService, GeminiAdvisoryService
 from .routes import router
 
 if TYPE_CHECKING:
     from ..runtime import ProductionScoringRuntime
 
 
-def create_app(settings: Settings | None = None, runtime: ProductionScoringRuntime | None = None) -> FastAPI:
+def create_app(
+    settings: Settings | None = None,
+    runtime: ProductionScoringRuntime | None = None,
+    gemini_advisor: GeminiAdvisoryService | None = None,
+) -> FastAPI:
     app = FastAPI(
         title="Fraud Analyst Backend",
         version="1.0.0",
@@ -24,6 +28,7 @@ def create_app(settings: Settings | None = None, runtime: ProductionScoringRunti
     )
     app.state.settings = settings or get_settings()
     app.state.runtime = runtime
+    app.state.gemini_advisor = gemini_advisor
     app.add_middleware(
         CORSMiddleware,
         allow_origins=list(app.state.settings.cors_allowed_origins),

@@ -7,7 +7,7 @@ from functools import lru_cache
 from pathlib import Path
 from typing import Iterator
 
-from sqlalchemy import create_engine, inspect
+from sqlalchemy import create_engine, inspect, text
 from sqlalchemy.orm import Session, sessionmaker
 
 from .config import get_settings
@@ -62,6 +62,42 @@ def _backup_legacy_sqlite_database(database_url: str) -> Path | None:
     return backup_path
 
 
+def _ensure_sqlite_column(
+    database_url: str,
+    table_name: str,
+    column_name: str,
+    column_ddl: str,
+) -> None:
+    if not _is_sqlite(database_url):
+        return
+
+    engine = create_engine(database_url, future=True, connect_args={"check_same_thread": False})
+    try:
+        inspector = inspect(engine)
+        table_names = set(inspector.get_table_names())
+        if table_name not in table_names:
+            return
+
+        column_names = {column["name"] for column in inspector.get_columns(table_name)}
+        if column_name in column_names:
+            return
+
+        with engine.begin() as connection:
+            connection.execute(text(f"ALTER TABLE {table_name} ADD COLUMN {column_name} {column_ddl}"))
+    finally:
+        engine.dispose()
+
+
+def _reconcile_local_sqlite_schema(database_url: str) -> None:
+    # Keep local SQLite databases usable across additive model changes.
+    _ensure_sqlite_column(
+        database_url,
+        table_name="scored_cases",
+        column_name="latest_gemini_analysis_payload",
+        column_ddl="JSON NULL",
+    )
+
+
 @lru_cache
 def get_engine(database_url: str | None = None):
     resolved_url = database_url or get_settings().database_url
@@ -80,6 +116,7 @@ def init_db(database_url: str | None = None) -> None:
         _backup_legacy_sqlite_database(resolved_url)
 
     Base.metadata.create_all(bind=get_engine(resolved_url))
+    _reconcile_local_sqlite_schema(resolved_url)
 
 
 def dispose_engine(database_url: str | None = None) -> None:

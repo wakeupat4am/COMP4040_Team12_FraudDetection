@@ -14,7 +14,7 @@ from ..config import Settings
 from ..database import get_session_factory
 from ..models import User
 from ..repositories import UserRepository
-from ..services import AuthService, CaseService
+from ..services import AuthService, CaseService, GeminiAdvisoryService
 
 if TYPE_CHECKING:
     from ..runtime import ProductionScoringRuntime
@@ -36,6 +36,13 @@ def get_runtime_dependency(request: Request):
     return get_runtime()
 
 
+def get_gemini_advisor_dependency(request: Request) -> GeminiAdvisoryService:
+    gemini_advisor = getattr(request.app.state, "gemini_advisor", None)
+    if gemini_advisor is not None:
+        return gemini_advisor
+    return GeminiAdvisoryService.from_settings(request.app.state.settings)
+
+
 def get_db_session(request: Request):
     session = get_session_factory(request.app.state.settings.database_url)()
     try:
@@ -55,7 +62,11 @@ def get_case_service(
     request: Request,
     session: Session = Depends(get_db_session),
 ) -> CaseService:
-    return CaseService(session=session, runtime=get_runtime_dependency(request))
+    return CaseService(
+        session=session,
+        runtime=get_runtime_dependency(request),
+        gemini_advisor=get_gemini_advisor_dependency(request),
+    )
 
 
 def get_current_user(

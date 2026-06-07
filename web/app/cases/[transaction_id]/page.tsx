@@ -7,7 +7,7 @@ import { EmptyState } from "@/components/empty-state";
 import { GuardedPage } from "@/components/guarded-page";
 import { JsonCard } from "@/components/json-card";
 import { StatusPill } from "@/components/status-pill";
-import { ApiError, getCaseDetail, rescoreCase, submitDecision, submitFeedback } from "@/lib/api";
+import { ApiError, analyzeCaseWithGemini, getCaseDetail, rescoreCase, submitDecision, submitFeedback } from "@/lib/api";
 import { formatDateTime, formatScore, titleCase } from "@/lib/formatters";
 import { useAuthedRequest } from "@/hooks/use-authed-request";
 import type { CaseDetailResponse, ConfirmedLabelValue, DecisionValue } from "@/lib/types";
@@ -19,7 +19,7 @@ export default function CaseDetailPage() {
   const [detail, setDetail] = useState<CaseDetailResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [busyAction, setBusyAction] = useState<"decision" | "rescore" | "feedback" | null>(null);
+  const [busyAction, setBusyAction] = useState<"decision" | "rescore" | "feedback" | "gemini" | null>(null);
   const [decision, setDecision] = useState<DecisionValue>("review");
   const [decisionNote, setDecisionNote] = useState("Needs manual verification.");
   const [feedbackLabel, setFeedbackLabel] = useState<ConfirmedLabelValue>("fraud");
@@ -78,9 +78,26 @@ export default function CaseDetailPage() {
     try {
       const response = await run((token) => rescoreCase(token, transactionId));
       setDetail(response);
+      setDecision(response.latest_analyst_decision ?? "review");
+      setDecisionNote(response.latest_note ?? "Needs manual verification.");
       setSuccessMessage("Case rescored using the current pipeline.");
     } catch (caughtError) {
       setError(caughtError instanceof Error ? caughtError.message : "Unable to rescore case.");
+    } finally {
+      setBusyAction(null);
+    }
+  }
+
+  async function handleGeminiAnalysis() {
+    setBusyAction("gemini");
+    setError(null);
+    setSuccessMessage(null);
+    try {
+      const response = await run((token) => analyzeCaseWithGemini(token, transactionId));
+      setDetail(response);
+      setSuccessMessage("Gemini advisory analysis generated.");
+    } catch (caughtError) {
+      setError(caughtError instanceof Error ? caughtError.message : "Unable to analyze case with Gemini.");
     } finally {
       setBusyAction(null);
     }
@@ -277,6 +294,97 @@ export default function CaseDetailPage() {
                     </button>
                   </div>
                 </form>
+              </section>
+
+              <section className="panel">
+                <div className="panel-header">
+                  <div>
+                    <h3>Gemini advisory analysis</h3>
+                    <p>Generate a separate AI recommendation from the current case snapshot. This does not replace analyst decisions.</p>
+                  </div>
+                  <div className="button-row">
+                    <button
+                      type="button"
+                      className="secondary-button"
+                      onClick={handleGeminiAnalysis}
+                      disabled={busyAction === "gemini"}
+                    >
+                      {busyAction === "gemini" ? "Analyzing..." : "Analyze with Gemini"}
+                    </button>
+                  </div>
+                </div>
+                {detail.latest_gemini_analysis ? (
+                  <>
+                    <div className="metric-grid">
+                      <div className="metric-card">
+                        <span className="eyebrow">Recommendation</span>
+                        <strong>
+                          <StatusPill value={detail.latest_gemini_analysis.recommended_decision} />
+                        </strong>
+                      </div>
+                      <div className="metric-card">
+                        <span className="eyebrow">Confidence</span>
+                        <strong>{titleCase(detail.latest_gemini_analysis.confidence)}</strong>
+                      </div>
+                      <div className="metric-card">
+                        <span className="eyebrow">Model</span>
+                        <strong>{detail.latest_gemini_analysis.model}</strong>
+                      </div>
+                    </div>
+                    <section className="panel" style={{ marginTop: "18px", padding: "18px" }}>
+                      <div className="panel-header">
+                        <div>
+                          <h4>Gemini summary</h4>
+                          <p>{detail.latest_gemini_analysis.summary}</p>
+                        </div>
+                      </div>
+                      <ul className="bullet-list">
+                        <li>Analyzed at: {formatDateTime(detail.latest_gemini_analysis.analyzed_at)}</li>
+                        <li>Source score run ID: {detail.latest_gemini_analysis.source_score_run_id}</li>
+                      </ul>
+                    </section>
+                    <section className="split-grid" style={{ marginTop: "18px" }}>
+                      <section className="panel">
+                        <div className="panel-header">
+                          <div>
+                            <h4>Key factors</h4>
+                            <p>Signals Gemini used to support the recommendation.</p>
+                          </div>
+                        </div>
+                        {detail.latest_gemini_analysis.key_factors.length === 0 ? (
+                          <EmptyState title="No key factors" description="Gemini did not return any supporting factors." />
+                        ) : (
+                          <ul className="bullet-list">
+                            {detail.latest_gemini_analysis.key_factors.map((factor, index) => (
+                              <li key={`${factor}-${index}`}>{factor}</li>
+                            ))}
+                          </ul>
+                        )}
+                      </section>
+                      <section className="panel">
+                        <div className="panel-header">
+                          <div>
+                            <h4>Risk flags</h4>
+                            <p>Highlighted concerns and suggested follow-up work.</p>
+                          </div>
+                        </div>
+                        <ul className="bullet-list">
+                          {detail.latest_gemini_analysis.risk_flags.map((flag, index) => (
+                            <li key={`${flag}-${index}`}>{flag}</li>
+                          ))}
+                          {detail.latest_gemini_analysis.follow_up_actions.map((action, index) => (
+                            <li key={`${action}-${index}`}>Follow-up: {action}</li>
+                          ))}
+                        </ul>
+                      </section>
+                    </section>
+                  </>
+                ) : (
+                  <EmptyState
+                    title="No Gemini analysis yet"
+                    description="Run Gemini analysis manually to add an advisory recommendation for this case."
+                  />
+                )}
               </section>
             </section>
           </section>

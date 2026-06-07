@@ -138,6 +138,13 @@ export function submitFeedback(
   });
 }
 
+export function analyzeCaseWithGemini(token: string, transactionId: string): Promise<CaseDetailResponse> {
+  return request<CaseDetailResponse>(`/cases/${encodeURIComponent(transactionId)}/gemini-analysis`, {
+    method: "POST",
+    token,
+  });
+}
+
 export function getMetricsSummary(token: string): Promise<MetricsSummaryResponse> {
   return request<MetricsSummaryResponse>("/metrics/summary", { token });
 }

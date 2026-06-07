@@ -8,6 +8,7 @@ from fastapi.testclient import TestClient
 
 from fraud_detection.api import create_app
 from fraud_detection.config import Settings
+from fraud_detection.services.gemini import GeminiNotConfiguredError, GeminiUpstreamError
 
 
 class FakeScoringRuntime:
@@ -116,8 +117,39 @@ class FakeScoringRuntime:
         }
 
 
-def build_client(tmp_path: Path) -> tuple[TestClient, FakeScoringRuntime, Settings]:
+class FakeGeminiAdvisoryService:
+    def __init__(self, mode: str = "success") -> None:
+        self.mode = mode
+        self.calls: list[dict[str, object]] = []
+        self.model = "gemini-test"
+
+    def build_analysis_payload(self, case_snapshot: dict[str, object], source_score_run_id: int) -> dict[str, object]:
+        self.calls.append({"case_snapshot": dict(case_snapshot), "source_score_run_id": source_score_run_id})
+        if self.mode == "not_configured":
+            raise GeminiNotConfiguredError("Gemini advisory analysis is not configured.")
+        if self.mode == "invalid":
+            raise GeminiUpstreamError("Gemini returned invalid structured output.")
+        if self.mode == "upstream_failure":
+            raise GeminiUpstreamError("Gemini analysis request failed.")
+        return {
+            "recommended_decision": "review",
+            "confidence": "medium",
+            "summary": "Transaction warrants manual review based on mixed signals.",
+            "key_factors": ["Elevated event score", "Limited history context"],
+            "risk_flags": ["Insufficient account history"],
+            "follow_up_actions": ["Verify sender identity"],
+            "model": self.model,
+            "analyzed_at": "2026-06-08T00:00:00Z",
+            "source_score_run_id": source_score_run_id,
+        }
+
+
+def build_client(
+    tmp_path: Path,
+    gemini_mode: str = "success",
+) -> tuple[TestClient, FakeScoringRuntime, FakeGeminiAdvisoryService, Settings]:
     runtime = FakeScoringRuntime()
+    gemini_advisor = FakeGeminiAdvisoryService(mode=gemini_mode)
     settings = Settings(
         database_url=f"sqlite:///{(tmp_path / 'fraud_ops.db').as_posix()}",
         auth_secret="test-secret",
@@ -129,8 +161,8 @@ def build_client(tmp_path: Path) -> tuple[TestClient, FakeScoringRuntime, Settin
         manager_username="admin",
         manager_password="admin-pass",
     )
-    app = create_app(settings=settings, runtime=runtime)
-    return TestClient(app), runtime, settings
+    app = create_app(settings=settings, runtime=runtime, gemini_advisor=gemini_advisor)
+    return TestClient(app), runtime, gemini_advisor, settings
 
 
 def login(client: TestClient, username: str, password: str) -> str:
@@ -155,7 +187,7 @@ def sample_payload(transaction_id: str, amount: float = 150.0) -> dict[str, obje
 
 
 def test_score_queue_detail_decision_and_rescore_flow(tmp_path: Path) -> None:
-    client, runtime, settings = build_client(tmp_path)
+    client, runtime, _, settings = build_client(tmp_path)
     with client:
         analyst_token = login(client, settings.analyst_username, settings.analyst_password)
         headers = {"Authorization": f"Bearer {analyst_token}"}
@@ -206,7 +238,7 @@ def test_score_queue_detail_decision_and_rescore_flow(tmp_path: Path) -> None:
 
 
 def test_case_filters_and_contracts_remain_compatible(tmp_path: Path) -> None:
-    client, _, settings = build_client(tmp_path)
+    client, _, _, settings = build_client(tmp_path)
     input_schema = json.loads(Path("end_to_end/input_schema.json").read_text(encoding="utf-8"))
     output_schema = json.loads(Path("end_to_end/output_schema.json").read_text(encoding="utf-8"))
 
@@ -234,7 +266,7 @@ def test_case_filters_and_contracts_remain_compatible(tmp_path: Path) -> None:
 
 
 def test_score_request_aliases_are_accepted_and_normalized(tmp_path: Path) -> None:
-    client, runtime, settings = build_client(tmp_path)
+    client, runtime, _, settings = build_client(tmp_path)
     with client:
         analyst_token = login(client, settings.analyst_username, settings.analyst_password)
         headers = {"Authorization": f"Bearer {analyst_token}"}
@@ -257,7 +289,7 @@ def test_score_request_aliases_are_accepted_and_normalized(tmp_path: Path) -> No
 
 
 def test_conflicting_request_aliases_return_400(tmp_path: Path) -> None:
-    client, _, settings = build_client(tmp_path)
+    client, _, _, settings = build_client(tmp_path)
     with client:
         analyst_token = login(client, settings.analyst_username, settings.analyst_password)
         headers = {"Authorization": f"Bearer {analyst_token}"}
@@ -269,7 +301,7 @@ def test_conflicting_request_aliases_return_400(tmp_path: Path) -> None:
 
 
 def test_explanation_summary_patterns(tmp_path: Path) -> None:
-    client, _, settings = build_client(tmp_path)
+    client, _, _, settings = build_client(tmp_path)
     with client:
         analyst_token = login(client, settings.analyst_username, settings.analyst_password)
         headers = {"Authorization": f"Bearer {analyst_token}"}
@@ -315,7 +347,7 @@ def test_explanation_summary_patterns(tmp_path: Path) -> None:
 
 
 def test_metrics_require_manager_role(tmp_path: Path) -> None:
-    client, _, settings = build_client(tmp_path)
+    client, _, _, settings = build_client(tmp_path)
     with client:
         analyst_token = login(client, settings.analyst_username, settings.analyst_password)
         analyst_headers = {"Authorization": f"Bearer {analyst_token}"}
@@ -334,7 +366,7 @@ def test_metrics_require_manager_role(tmp_path: Path) -> None:
 
 
 def test_feedback_submission_and_feedback_history(tmp_path: Path) -> None:
-    client, _, settings = build_client(tmp_path)
+    client, _, _, settings = build_client(tmp_path)
     with client:
         analyst_token = login(client, settings.analyst_username, settings.analyst_password)
         headers = {"Authorization": f"Bearer {analyst_token}"}
@@ -357,7 +389,7 @@ def test_feedback_submission_and_feedback_history(tmp_path: Path) -> None:
 
 
 def test_feedback_unknown_case_returns_404(tmp_path: Path) -> None:
-    client, _, settings = build_client(tmp_path)
+    client, _, _, settings = build_client(tmp_path)
     with client:
         analyst_token = login(client, settings.analyst_username, settings.analyst_password)
         headers = {"Authorization": f"Bearer {analyst_token}"}
@@ -370,7 +402,7 @@ def test_feedback_unknown_case_returns_404(tmp_path: Path) -> None:
 
 
 def test_monitoring_summary_tracks_score_and_rescore_events(tmp_path: Path) -> None:
-    client, _, settings = build_client(tmp_path)
+    client, _, _, settings = build_client(tmp_path)
     with client:
         analyst_token = login(client, settings.analyst_username, settings.analyst_password)
         analyst_headers = {"Authorization": f"Bearer {analyst_token}"}
@@ -391,7 +423,7 @@ def test_monitoring_summary_tracks_score_and_rescore_events(tmp_path: Path) -> N
 
 
 def test_monitoring_summary_requires_manager_role(tmp_path: Path) -> None:
-    client, _, settings = build_client(tmp_path)
+    client, _, _, settings = build_client(tmp_path)
     with client:
         analyst_token = login(client, settings.analyst_username, settings.analyst_password)
         analyst_headers = {"Authorization": f"Bearer {analyst_token}"}
@@ -401,7 +433,7 @@ def test_monitoring_summary_requires_manager_role(tmp_path: Path) -> None:
 
 
 def test_cors_allows_local_next_origin(tmp_path: Path) -> None:
-    client, _, _ = build_client(tmp_path)
+    client, _, _, _ = build_client(tmp_path)
     with client:
         response = client.options(
             "/auth/login",
@@ -436,6 +468,7 @@ def test_startup_recovers_legacy_sqlite_without_password_hash(tmp_path: Path) ->
         connection.close()
 
     runtime = FakeScoringRuntime()
+    gemini_advisor = FakeGeminiAdvisoryService()
     settings = Settings(
         database_url=f"sqlite:///{database_path.as_posix()}",
         auth_secret="test-secret",
@@ -448,10 +481,155 @@ def test_startup_recovers_legacy_sqlite_without_password_hash(tmp_path: Path) ->
         manager_password="admin-pass",
     )
 
-    app = create_app(settings=settings, runtime=runtime)
+    app = create_app(settings=settings, runtime=runtime, gemini_advisor=gemini_advisor)
     with TestClient(app) as client:
         response = client.post("/auth/login", json={"username": "analyst", "password": "analyst-pass"})
         assert response.status_code == 200
 
     backup_candidates = sorted(tmp_path.glob("legacy_fraud_ops.legacy-*.db"))
     assert backup_candidates
+
+
+def test_startup_adds_missing_gemini_column_to_existing_local_sqlite(tmp_path: Path) -> None:
+    database_path = tmp_path / "existing_fraud_ops.db"
+    connection = sqlite3.connect(database_path)
+    try:
+        connection.execute(
+            """
+            CREATE TABLE users (
+                id INTEGER PRIMARY KEY,
+                username TEXT NOT NULL UNIQUE,
+                password_hash TEXT NOT NULL,
+                role TEXT NOT NULL,
+                is_active BOOLEAN NOT NULL DEFAULT 1,
+                created_at TEXT NOT NULL,
+                updated_at TEXT NOT NULL,
+                last_login_at TEXT NULL
+            )
+            """
+        )
+        connection.execute(
+            """
+            CREATE TABLE scored_cases (
+                id INTEGER PRIMARY KEY,
+                transaction_id TEXT NOT NULL UNIQUE,
+                original_request_payload JSON NOT NULL,
+                current_output_payload JSON NOT NULL,
+                explanation_payload JSON NOT NULL,
+                routing_metadata JSON NOT NULL,
+                pipeline_profile TEXT NOT NULL,
+                final_risk_score REAL NOT NULL,
+                risk_bucket TEXT NOT NULL,
+                decision TEXT NOT NULL,
+                review_status TEXT NOT NULL,
+                latest_analyst_decision TEXT NULL,
+                latest_note TEXT NULL,
+                latest_score_run_id INTEGER NULL,
+                last_scored_at TEXT NOT NULL,
+                created_at TEXT NOT NULL,
+                updated_at TEXT NOT NULL
+            )
+            """
+        )
+        connection.commit()
+    finally:
+        connection.close()
+
+    runtime = FakeScoringRuntime()
+    gemini_advisor = FakeGeminiAdvisoryService()
+    settings = Settings(
+        database_url=f"sqlite:///{database_path.as_posix()}",
+        auth_secret="test-secret",
+        auth_token_ttl_seconds=3600,
+        bootstrap_history=False,
+        cors_allowed_origins=("http://localhost:3000",),
+        analyst_username="analyst",
+        analyst_password="analyst-pass",
+        manager_username="admin",
+        manager_password="admin-pass",
+    )
+
+    app = create_app(settings=settings, runtime=runtime, gemini_advisor=gemini_advisor)
+    with TestClient(app):
+        pass
+
+    connection = sqlite3.connect(database_path)
+    try:
+        columns = {row[1] for row in connection.execute("PRAGMA table_info(scored_cases)").fetchall()}
+    finally:
+        connection.close()
+
+    assert "latest_gemini_analysis_payload" in columns
+
+
+def test_gemini_analysis_persists_and_is_returned_from_detail(tmp_path: Path) -> None:
+    client, _, gemini_advisor, settings = build_client(tmp_path)
+    with client:
+        analyst_token = login(client, settings.analyst_username, settings.analyst_password)
+        headers = {"Authorization": f"Bearer {analyst_token}"}
+        assert client.post("/score", json=sample_payload("tx-gemini"), headers=headers).status_code == 200
+
+        analysis_response = client.post("/cases/tx-gemini/gemini-analysis", headers=headers)
+        assert analysis_response.status_code == 200
+        analysis_body = analysis_response.json()
+        assert analysis_body["latest_gemini_analysis"]["recommended_decision"] == "review"
+        assert analysis_body["latest_gemini_analysis"]["model"] == gemini_advisor.model
+        assert analysis_body["latest_gemini_analysis"]["source_score_run_id"] == analysis_body["latest_score_run_id"]
+        assert analysis_body["review_status"] == "pending"
+        assert analysis_body["latest_analyst_decision"] is None
+
+        detail_response = client.get("/cases/tx-gemini", headers=headers)
+        assert detail_response.status_code == 200
+        detail_body = detail_response.json()
+        assert detail_body["latest_gemini_analysis"]["summary"] == analysis_body["latest_gemini_analysis"]["summary"]
+        assert gemini_advisor.calls[0]["case_snapshot"]["score_summary"]["transaction_id"] == "tx-gemini"
+        assert "original_request_payload" not in gemini_advisor.calls[0]["case_snapshot"]
+        assert detail_body["audit_trail"][0]["action"] == "gemini_analysis_generated"
+
+
+def test_gemini_analysis_requires_configuration_and_audits_failure(tmp_path: Path) -> None:
+    client, _, _, settings = build_client(tmp_path, gemini_mode="not_configured")
+    with client:
+        analyst_token = login(client, settings.analyst_username, settings.analyst_password)
+        headers = {"Authorization": f"Bearer {analyst_token}"}
+        assert client.post("/score", json=sample_payload("tx-gemini-missing"), headers=headers).status_code == 200
+
+        analysis_response = client.post("/cases/tx-gemini-missing/gemini-analysis", headers=headers)
+        assert analysis_response.status_code == 503
+        assert "not configured" in analysis_response.json()["detail"]
+
+        detail_response = client.get("/cases/tx-gemini-missing", headers=headers)
+        detail_body = detail_response.json()
+        assert detail_body["latest_gemini_analysis"] is None
+        assert detail_body["audit_trail"][0]["action"] == "gemini_analysis_failed"
+
+
+def test_gemini_invalid_output_returns_502_and_is_not_persisted(tmp_path: Path) -> None:
+    client, _, _, settings = build_client(tmp_path, gemini_mode="invalid")
+    with client:
+        analyst_token = login(client, settings.analyst_username, settings.analyst_password)
+        headers = {"Authorization": f"Bearer {analyst_token}"}
+        assert client.post("/score", json=sample_payload("tx-gemini-invalid"), headers=headers).status_code == 200
+
+        analysis_response = client.post("/cases/tx-gemini-invalid/gemini-analysis", headers=headers)
+        assert analysis_response.status_code == 502
+        assert "invalid structured output" in analysis_response.json()["detail"]
+
+        detail_response = client.get("/cases/tx-gemini-invalid", headers=headers)
+        detail_body = detail_response.json()
+        assert detail_body["latest_gemini_analysis"] is None
+        assert detail_body["audit_trail"][0]["action"] == "gemini_analysis_failed"
+
+
+def test_rescore_clears_saved_gemini_analysis(tmp_path: Path) -> None:
+    client, _, _, settings = build_client(tmp_path)
+    with client:
+        analyst_token = login(client, settings.analyst_username, settings.analyst_password)
+        headers = {"Authorization": f"Bearer {analyst_token}"}
+        assert client.post("/score", json=sample_payload("tx-gemini-rescore"), headers=headers).status_code == 200
+        assert client.post("/cases/tx-gemini-rescore/gemini-analysis", headers=headers).status_code == 200
+
+        rescore_response = client.post("/cases/tx-gemini-rescore/rescore", headers=headers)
+        assert rescore_response.status_code == 200
+        rescore_body = rescore_response.json()
+        assert rescore_body["latest_gemini_analysis"] is None

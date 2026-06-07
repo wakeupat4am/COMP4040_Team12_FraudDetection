@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import logging
 from datetime import datetime
 from typing import Any
 
@@ -9,7 +10,7 @@ from fastapi import APIRouter, Body, Depends, HTTPException, Query, status
 from pydantic import ValidationError
 
 from ..models import User
-from ..services import AuthService, CaseService
+from ..services import AuthService, CaseService, GeminiNotConfiguredError, GeminiUpstreamError
 from .dependencies import get_auth_service, get_case_service, require_roles
 from .schemas import (
     AnalystDecisionRequest,
@@ -27,6 +28,7 @@ from .schemas import (
 
 
 router = APIRouter()
+logger = logging.getLogger(__name__)
 
 
 @router.get("/health", response_model=HealthResponse, tags=["system"])
@@ -147,6 +149,25 @@ def submit_feedback(
     except LookupError as exc:
         case_service.session.rollback()
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
+
+
+@router.post("/cases/{transaction_id}/gemini-analysis", response_model=CaseDetailResponse, tags=["cases"])
+def generate_gemini_analysis(
+    transaction_id: str,
+    case_service: CaseService = Depends(get_case_service),
+    current_user: User = Depends(require_roles("analyst", "manager_admin")),
+) -> dict[str, Any]:
+    try:
+        return case_service.generate_gemini_analysis(transaction_id, current_user)
+    except LookupError as exc:
+        case_service.session.rollback()
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
+    except GeminiNotConfiguredError as exc:
+        logger.warning("Gemini advisory analysis is not configured for case %s: %s", transaction_id, exc)
+        raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail=str(exc)) from exc
+    except GeminiUpstreamError as exc:
+        logger.exception("Gemini advisory analysis failed for case %s", transaction_id)
+        raise HTTPException(status_code=status.HTTP_502_BAD_GATEWAY, detail=str(exc)) from exc
 
 
 @router.get("/metrics/summary", response_model=MetricsSummaryResponse, tags=["metrics"])

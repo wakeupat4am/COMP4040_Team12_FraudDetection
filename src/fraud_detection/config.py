@@ -7,12 +7,16 @@ from dataclasses import dataclass
 from functools import lru_cache
 from pathlib import Path
 
+from dotenv import load_dotenv
+
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 CONFIG_DIR = PROJECT_ROOT / "configs"
 DATA_DIR = PROJECT_ROOT / "data"
 MODELS_DIR = PROJECT_ROOT / "models"
 REPORTS_DIR = PROJECT_ROOT / "reports"
+
+load_dotenv(PROJECT_ROOT / ".env")
 
 
 def _env_bool(name: str, default: bool) -> bool:
@@ -46,6 +50,9 @@ class Settings:
     analyst_password: str
     manager_username: str
     manager_password: str
+    gemini_api_key: str | None = None
+    gemini_model: str = "gemini-2.5-flash"
+    gemini_timeout_seconds: int = 15
 
 
 @lru_cache
@@ -60,4 +67,7 @@ def get_settings() -> Settings:
         analyst_password=os.getenv("ANALYST_PASSWORD", "changeme-analyst"),
         manager_username=os.getenv("MANAGER_USERNAME", "admin"),
         manager_password=os.getenv("MANAGER_PASSWORD", "changeme-admin"),
+        gemini_api_key=os.getenv("GEMINI_API_KEY"),
+        gemini_model=os.getenv("GEMINI_MODEL", "gemini-2.5-flash"),
+        gemini_timeout_seconds=int(os.getenv("GEMINI_TIMEOUT_SECONDS", "15")),
     )
