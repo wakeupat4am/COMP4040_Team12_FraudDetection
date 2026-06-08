@@ -42,6 +42,7 @@ class ScoredCase(Base):
     current_output_payload: Mapped[dict] = mapped_column(JSON)
     explanation_payload: Mapped[dict] = mapped_column(JSON)
     routing_metadata: Mapped[dict] = mapped_column(JSON)
+    latest_gemini_analysis_payload: Mapped[dict | None] = mapped_column(JSON, nullable=True)
     pipeline_profile: Mapped[str] = mapped_column(String(128))
     final_risk_score: Mapped[float] = mapped_column(Float)
     risk_bucket: Mapped[str] = mapped_column(String(32))

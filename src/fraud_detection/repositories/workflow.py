@@ -154,6 +154,7 @@ class WorkflowRepository:
         scored_case.current_output_payload = output_payload
         scored_case.explanation_payload = output_payload["explanations"]
         scored_case.routing_metadata = output_payload.get("routing_metadata", {})
+        scored_case.latest_gemini_analysis_payload = None
         scored_case.pipeline_profile = output_payload["pipeline_profile"]
         scored_case.final_risk_score = float(output_payload["final_risk_score"])
         scored_case.risk_bucket = output_payload["risk_bucket"]
@@ -244,6 +245,42 @@ class WorkflowRepository:
             details={"confirmed_label": confirmed_label, "note": note},
         )
         return feedback
+
+    def record_gemini_analysis(
+        self,
+        session: Session,
+        scored_case: ScoredCase,
+        analysis_payload: dict[str, Any],
+        actor_user_id: int,
+    ) -> None:
+        scored_case.latest_gemini_analysis_payload = analysis_payload
+        session.flush()
+        self.add_audit_log(
+            session,
+            transaction_id=scored_case.transaction_id,
+            action="gemini_analysis_generated",
+            actor_user_id=actor_user_id,
+            details={
+                "model": analysis_payload["model"],
+                "recommended_decision": analysis_payload["recommended_decision"],
+                "source_score_run_id": analysis_payload["source_score_run_id"],
+            },
+        )
+
+    def record_gemini_failure(
+        self,
+        session: Session,
+        scored_case: ScoredCase,
+        actor_user_id: int,
+        error_message: str,
+    ) -> None:
+        self.add_audit_log(
+            session,
+            transaction_id=scored_case.transaction_id,
+            action="gemini_analysis_failed",
+            actor_user_id=actor_user_id,
+            details={"error": error_message},
+        )
 
     def record_monitoring_event(
         self,

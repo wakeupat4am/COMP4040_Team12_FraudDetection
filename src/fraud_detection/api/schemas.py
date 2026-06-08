@@ -12,6 +12,7 @@ DecisionValue = Literal["allow", "review", "block"]
 RoleValue = Literal["analyst", "manager_admin"]
 ReviewStatusValue = Literal["pending", "reviewed"]
 ConfirmedLabelValue = Literal["fraud", "legitimate"]
+ConfidenceValue = Literal["low", "medium", "high"]
 
 
 class ScoreRequest(BaseModel):
@@ -129,11 +130,24 @@ class FeedbackEntry(BaseModel):
     reviewer_username: str | None = None
 
 
+class GeminiAnalysisResponse(BaseModel):
+    recommended_decision: DecisionValue
+    confidence: ConfidenceValue
+    summary: str
+    key_factors: list[str]
+    risk_flags: list[str]
+    follow_up_actions: list[str]
+    model: str
+    analyzed_at: datetime
+    source_score_run_id: int
+
+
 class CaseDetailResponse(CaseQueueItem):
     original_request_payload: dict[str, Any]
     latest_output: PipelineOutputContract
     explanation_payload: dict[str, Any]
     routing_metadata: dict[str, Any]
+    latest_gemini_analysis: GeminiAnalysisResponse | None = None
     latest_score_run_id: int | None = None
     review_history: list[ReviewEntry]
     feedback_history: list[FeedbackEntry]

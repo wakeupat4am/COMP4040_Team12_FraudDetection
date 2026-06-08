@@ -2,6 +2,7 @@ export type DecisionValue = "allow" | "review" | "block";
 export type RoleValue = "analyst" | "manager_admin";
 export type ReviewStatusValue = "pending" | "reviewed";
 export type ConfirmedLabelValue = "fraud" | "legitimate";
+export type ConfidenceValue = "low" | "medium" | "high";
 
 export interface AuthSession {
   userId: string;
@@ -78,11 +79,24 @@ export interface FeedbackEntry {
   reviewer_username: string | null;
 }
 
+export interface GeminiAnalysisResponse {
+  recommended_decision: DecisionValue;
+  confidence: ConfidenceValue;
+  summary: string;
+  key_factors: string[];
+  risk_flags: string[];
+  follow_up_actions: string[];
+  model: string;
+  analyzed_at: string;
+  source_score_run_id: number;
+}
+
 export interface CaseDetailResponse extends CaseQueueItem {
   original_request_payload: Record<string, unknown>;
   latest_output: PipelineOutputContract;
   explanation_payload: Record<string, unknown>;
   routing_metadata: Record<string, unknown>;
+  latest_gemini_analysis: GeminiAnalysisResponse | null;
   latest_score_run_id: number | null;
   review_history: ReviewEntry[];
   feedback_history: FeedbackEntry[];

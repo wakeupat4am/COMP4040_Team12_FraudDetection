@@ -2,5 +2,12 @@
 
 from .auth import AuthService
 from .cases import CaseService
+from .gemini import GeminiAdvisoryService, GeminiNotConfiguredError, GeminiUpstreamError
 
-__all__ = ["AuthService", "CaseService"]
+__all__ = [
+    "AuthService",
+    "CaseService",
+    "GeminiAdvisoryService",
+    "GeminiNotConfiguredError",
+    "GeminiUpstreamError",
+]

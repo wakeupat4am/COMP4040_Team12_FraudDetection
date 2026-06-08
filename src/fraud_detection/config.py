@@ -7,6 +7,8 @@ from dataclasses import dataclass
 from functools import lru_cache
 from pathlib import Path
 
+from dotenv import load_dotenv
+
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 CONFIG_DIR = PROJECT_ROOT / "configs"
@@ -41,6 +43,8 @@ def _load_env_file(path: Path) -> None:
 
 
 _load_env_file(DOTENV_PATH)
+
+load_dotenv(PROJECT_ROOT / ".env")
 
 
 def _env_bool(name: str, default: bool) -> bool:
@@ -80,6 +84,9 @@ class Settings:
     mlflow_tracking_uri: str
     mlflow_experiment_name: str
     mlflow_model_run_id: str | None
+    gemini_api_key: str | None = None
+    gemini_model: str = "gemini-2.5-flash"
+    gemini_timeout_seconds: int = 15
 
 
 @lru_cache
@@ -100,4 +107,7 @@ def get_settings() -> Settings:
         mlflow_tracking_uri=os.getenv("MLFLOW_TRACKING_URI", "file:///tmp/fraud-detection-mlruns"),
         mlflow_experiment_name=os.getenv("MLFLOW_EXPERIMENT_NAME", "fraud-detection-production"),
         mlflow_model_run_id=os.getenv("MLFLOW_MODEL_RUN_ID"),
+        gemini_api_key=os.getenv("GEMINI_API_KEY"),
+        gemini_model=os.getenv("GEMINI_MODEL", "gemini-2.5-flash"),
+        gemini_timeout_seconds=int(os.getenv("GEMINI_TIMEOUT_SECONDS", "15")),
     )

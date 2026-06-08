@@ -12,13 +12,18 @@ from sqlalchemy.exc import OperationalError
 
 from ..config import Settings, get_settings
 from ..database import dispose_engine, init_db
+from ..services import GeminiAdvisoryService
 from .routes import router
 
 if TYPE_CHECKING:
     from ..runtime import ProductionScoringRuntime
 
 
-def create_app(settings: Settings | None = None, runtime: ProductionScoringRuntime | None = None) -> FastAPI:
+def create_app(
+    settings: Settings | None = None,
+    runtime: ProductionScoringRuntime | None = None,
+    gemini_advisor: GeminiAdvisoryService | None = None,
+) -> FastAPI:
     resolved_settings = settings or get_settings()
 
     @asynccontextmanager
@@ -45,6 +50,7 @@ def create_app(settings: Settings | None = None, runtime: ProductionScoringRunti
     )
     app.state.settings = resolved_settings
     app.state.runtime = runtime
+    app.state.gemini_advisor = gemini_advisor
     app.add_middleware(
         CORSMiddleware,
         allow_origins=list(app.state.settings.cors_allowed_origins),
