@@ -9,6 +9,9 @@ from typing import Any
 import pandas as pd
 
 
+SSFD_BOOTSTRAP_COLUMNS = {"Time", "Source", "Target", "Amount", "Location", "Type", "Labels"}
+
+
 def parse_timestamp(value: str | float | int) -> float:
     if isinstance(value, (int, float)):
         return float(value)
@@ -87,6 +90,8 @@ class InMemoryStateStore:
             if not path.exists():
                 continue
             df = pd.read_csv(path)
+            if not SSFD_BOOTSTRAP_COLUMNS.issubset(df.columns):
+                continue
             for row in df.itertuples(index=False):
                 event = TransactionEvent(
                     transaction_id=f"bootstrap_{getattr(row, 'Time')}_{getattr(row, 'Source')}_{getattr(row, 'Target')}",
