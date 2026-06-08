@@ -1,7 +1,8 @@
 "use client";
 
 import { SignIn } from "@clerk/nextjs";
-import { Suspense, useEffect } from "react";
+import { useSignIn } from "@clerk/nextjs";
+import { Suspense, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 
 import { useAuth } from "@/components/auth-provider";
@@ -9,7 +10,10 @@ import { useAuth } from "@/components/auth-provider";
 function LoginPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { error, session, status } = useAuth();
+  const { session, status } = useAuth();
+  const { signIn } = useSignIn();
+  const token = searchParams.get("token");
+  const [tokenError, setTokenError] = useState<string | null>(null);
 
   useEffect(() => {
     if (status === "authenticated" && session) {
@@ -17,14 +21,69 @@ function LoginPageContent() {
     }
   }, [router, searchParams, session, status]);
 
+  useEffect(() => {
+    if (!token || !signIn) {
+      return;
+    }
+
+    let cancelled = false;
+
+    async function completeTicketSignIn() {
+      if (!token) {
+        return;
+      }
+
+      const { error } = await signIn.ticket({ ticket: token });
+      if (cancelled) {
+        return;
+      }
+      if (error) {
+        setTokenError(error.message || "Unable to complete token sign-in.");
+        return;
+      }
+
+      if (signIn.status === "complete") {
+        const next = searchParams.get("next") ?? "/cases";
+        await signIn.finalize({
+          navigate: async ({ decorateUrl }) => {
+            const url = decorateUrl(next);
+            if (url.startsWith("http")) {
+              window.location.href = url;
+              return;
+            }
+            router.replace(url);
+          },
+        });
+      }
+    }
+
+    void completeTicketSignIn();
+    return () => {
+      cancelled = true;
+    };
+  }, [router, searchParams, signIn, token]);
+
   return (
-    <div className="fullscreen-center">
-      <section className="panel landing-card">
-        <p className="eyebrow">Fraud Ops Console</p>
-        <h2>Sign in to the analyst dashboard</h2>
-        {error ? <div className="error-banner">{error}</div> : null}
-        <SignIn routing="path" path="/login" signUpUrl="/login" forceRedirectUrl={searchParams.get("next") ?? "/cases"} />
-      </section>
+    <div className="login-screen">
+      {tokenError ? <div className="error-banner">{tokenError}</div> : null}
+      <SignIn
+        routing="hash"
+        signUpUrl="/sign-up"
+        forceRedirectUrl={searchParams.get("next") ?? "/cases"}
+        appearance={{
+          variables: {
+            colorBackground: "#000000",
+            colorPrimary: "#ffffff",
+            colorText: "#ffffff",
+            colorTextSecondary: "#a1a1aa",
+            colorInputBackground: "#000000",
+            colorInputText: "#ffffff",
+            colorInputBorder: "#2a2a2a",
+            colorShimmer: "#111111",
+            colorDanger: "#ff6b6b",
+          },
+        }}
+      />
     </div>
   );
 }
@@ -32,15 +91,7 @@ function LoginPageContent() {
 export default function LoginPage() {
   return (
     <Suspense
-      fallback={
-        <div className="fullscreen-center">
-          <section className="panel landing-card">
-            <p className="eyebrow">Fraud Ops Console</p>
-            <h2>Loading sign-in flow</h2>
-            <p>Preparing the browser auth workflow.</p>
-          </section>
-        </div>
-      }
+      fallback={<div className="login-screen" />}
     >
       <LoginPageContent />
     </Suspense>

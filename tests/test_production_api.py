@@ -370,7 +370,7 @@ def test_explanation_summary_patterns(tmp_path: Path) -> None:
             assert summary["graph_signal"] == graph_signal
 
 
-def test_metrics_require_manager_role(tmp_path: Path) -> None:
+def test_metrics_are_available_to_authenticated_users(tmp_path: Path) -> None:
     client, _, settings = build_client(tmp_path)
     with client:
         analyst_token = token_for(settings.analyst_clerk_user_id)
@@ -378,13 +378,14 @@ def test_metrics_require_manager_role(tmp_path: Path) -> None:
         assert client.post("/score", json=sample_payload("tx-004"), headers=analyst_headers).status_code == 200
 
         analyst_metrics = client.get("/metrics/summary", headers=analyst_headers)
-        assert analyst_metrics.status_code == 403
+        assert analyst_metrics.status_code == 200
 
-        admin_token = token_for(settings.manager_clerk_user_id)
-        admin_headers = {"Authorization": f"Bearer {admin_token}"}
-        admin_metrics = client.get("/metrics/summary", headers=admin_headers)
-        assert admin_metrics.status_code == 200
-        metrics_body = admin_metrics.json()
+        external_token = token_for("user_test_external")
+        external_headers = {"Authorization": f"Bearer {external_token}"}
+        external_metrics = client.get("/metrics/summary", headers=external_headers)
+        assert external_metrics.status_code == 200
+
+        metrics_body = analyst_metrics.json()
         assert metrics_body["total_cases"] == 1
         assert metrics_body["pending_review_cases"] == 1
 
@@ -446,14 +447,14 @@ def test_monitoring_summary_tracks_score_and_rescore_events(tmp_path: Path) -> N
         assert summary_body["latest_event_at"] is not None
 
 
-def test_monitoring_summary_requires_manager_role(tmp_path: Path) -> None:
+def test_monitoring_summary_is_available_to_authenticated_users(tmp_path: Path) -> None:
     client, _, settings = build_client(tmp_path)
     with client:
         analyst_token = token_for(settings.analyst_clerk_user_id)
         analyst_headers = {"Authorization": f"Bearer {analyst_token}"}
         assert client.post("/score", json=sample_payload("tx-007"), headers=analyst_headers).status_code == 200
         response = client.get("/monitoring/summary", headers=analyst_headers)
-        assert response.status_code == 403
+        assert response.status_code == 200
 
 
 def test_cors_allows_local_next_origin(tmp_path: Path) -> None:

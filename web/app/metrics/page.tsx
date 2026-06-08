@@ -54,9 +54,8 @@ export default function MetricsPage() {
 
   return (
     <GuardedPage
-      title="Manager Metrics"
-      description="View queue state and backend telemetry from the same browser workflow used by analysts."
-      allowedRoles={["manager_admin"]}
+      title="Metrics"
+      description="View queue state and backend telemetry from the same signed-in dashboard."
     >
       {error ? <div className="error-banner">{error}</div> : null}
       {loading ? <section className="panel"><p>Loading metrics...</p></section> : null}

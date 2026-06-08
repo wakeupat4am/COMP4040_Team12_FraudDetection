@@ -1,0 +1,18 @@
+[    1350ms] [ERROR]  Note that 'script-src' was not explicitly set, so 'default-src' is used as a fallback. @ https://happy-shepherd-11.accounts.dev/_next/static/chunks/pages/_app-2fc9629367be2ce2.js:18
+[    1681ms] [WARNING] Clerk: Clerk has been loaded with development keys. Development instances have strict usage limits and should not be used when deploying your application to production. Learn more: https://clerk.com/docs/deployments/overview @ https://happy-shepherd-11.accounts.dev/_next/static/chunks/pages/_app-2fc9629367be2ce2.js:14
+[    2809ms] [WARNING] Clerk: Structural CSS detected that may break on updates.
+
+Found:
+  - CSS "body.cl-component"
+  - CSS ".cl-component .button:focus-visible"
+
+These selectors depend on the internal DOM structure of Clerk's components, which may change when Clerk deploys component updates.
+To prevent breaking changes, install @clerk/ui and pass it to ClerkProvider:
+
+  import { ui } from '@clerk/ui'
+  <ClerkProvider ui={ui}>
+
+Learn more: https://clerk.com/docs/reference/components/versioning
+(code=structural_css_pin_clerk_ui) @ https://happy-shepherd-11.accounts.dev/_next/static/chunks/pages/_app-2fc9629367be2ce2.js:14
+[    3965ms] [ERROR] Error: <svg> attribute width: Expected length, "fit-content". @ https://happy-shepherd-11.accounts.dev/_next/static/chunks/framework-155d793edb9d37ef.js:0
+[    3986ms] [ERROR] Error: <svg> attribute width: Expected length, "fit-content". @ https://happy-shepherd-11.accounts.dev/_next/static/chunks/framework-155d793edb9d37ef.js:0

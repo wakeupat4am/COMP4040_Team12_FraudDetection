@@ -6,21 +6,14 @@ import { usePathname, useRouter } from "next/navigation";
 
 import { AppShell } from "@/components/app-shell";
 import { useAuth } from "@/components/auth-provider";
-import type { RoleValue } from "@/lib/types";
 
 interface GuardedPageProps {
   title: string;
   description: string;
   children: ReactNode;
-  allowedRoles?: RoleValue[];
 }
 
-export function GuardedPage({
-  title,
-  description,
-  children,
-  allowedRoles = ["analyst", "manager_admin"],
-}: GuardedPageProps) {
+export function GuardedPage({ title, description, children }: GuardedPageProps) {
   const router = useRouter();
   const pathname = usePathname();
   const { error, session, status } = useAuth();
@@ -29,33 +22,28 @@ export function GuardedPage({
     if (status === "anonymous") {
       const next = pathname && pathname !== "/" ? `?next=${encodeURIComponent(pathname)}` : "";
       router.replace(`/login${next}`);
-      return;
     }
-
-    if (status === "authenticated" && session && !allowedRoles.includes(session.role)) {
-      router.replace("/cases");
-    }
-  }, [allowedRoles, pathname, router, session, status]);
+  }, [pathname, router, status]);
 
   if (status === "loading") {
     return (
       <div className="fullscreen-center">
         <section className="panel">
           <p className="eyebrow">Session</p>
-          <h2>Restoring analyst session</h2>
-          <p>Checking local credentials and preparing the console.</p>
+          <h2>Restoring session</h2>
+          <p>Checking local credentials and preparing the dashboard.</p>
         </section>
       </div>
     );
   }
 
-  if (status === "anonymous" || !session || !allowedRoles.includes(session.role)) {
+  if (status === "anonymous" || !session) {
     if (error) {
       return (
         <div className="fullscreen-center">
           <section className="panel">
             <p className="eyebrow">Access</p>
-            <h2>Backend role mapping is missing</h2>
+            <h2>Unable to verify your session</h2>
             <p>{error}</p>
           </section>
         </div>

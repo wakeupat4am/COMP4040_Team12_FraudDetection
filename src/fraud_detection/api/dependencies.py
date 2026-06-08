@@ -84,19 +84,35 @@ async def get_current_user(
     if not isinstance(clerk_user_id, str) or not clerk_user_id:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Clerk token is missing a user subject")
 
-    user = UserRepository().get_by_clerk_user_id(session, clerk_user_id)
-    if user is None or not user.is_active:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Unknown user")
+    display_name = _resolve_user_name(payload, clerk_user_id, settings)
+    user = UserRepository().upsert_clerk_user(
+        session,
+        username=display_name,
+        clerk_user_id=clerk_user_id,
+        role="analyst",
+    )
 
     user.last_login_at = datetime.now(tz=timezone.utc)
     session.commit()
     return user
 
 
-def require_roles(*roles: str) -> Callable[[User], User]:
+def _resolve_user_name(payload: dict[str, object], clerk_user_id: str, settings: Settings) -> str:
+    if clerk_user_id == settings.analyst_clerk_user_id:
+        return settings.analyst_username
+    if clerk_user_id == settings.manager_clerk_user_id:
+        return settings.manager_username
+
+    for key in ("name", "email", "email_address", "username", "full_name"):
+        value = payload.get(key)
+        if isinstance(value, str) and value.strip():
+            return value.strip()
+
+    return clerk_user_id
+
+
+def require_roles(*_roles: str) -> Callable[[User], User]:
     async def dependency(current_user: User = Depends(get_current_user)) -> User:
-        if current_user.role not in roles:
-            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Insufficient role")
         return current_user
 
     return dependency

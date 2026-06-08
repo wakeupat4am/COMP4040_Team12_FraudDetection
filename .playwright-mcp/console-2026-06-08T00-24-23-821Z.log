@@ -1,0 +1,60 @@
+[    2350ms] [ERROR] Failed to load resource: the server responded with a status of 500 (Internal Server Error) @ http://localhost:3000/login:0
+[    3589ms] [INFO] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold @ webpack-internal:///(pages-dir-browser)/./node_modules/react-dom/cjs/react-dom-client.development.js:28004
+[    3689ms] Error: @clerk/nextjs: Missing secretKey. You can get your key at https://dashboard.clerk.com/last-active?path=api-keys.
+    at Object.throwMissingSecretKeyError (webpack-internal:///(middleware)/./node_modules/@clerk/shared/dist/runtime/_chunks/error-DAG0ASPV.mjs:299:10)
+    at eval (webpack-internal:///(middleware)/./node_modules/@clerk/nextjs/dist/esm/server/clerkMiddleware.js:66:72)
+    at assertKey (webpack-internal:///(middleware)/./node_modules/@clerk/nextjs/dist/esm/server/utils.js:122:5)
+    at eval (webpack-internal:///(middleware)/./node_modules/@clerk/nextjs/dist/esm/server/clerkMiddleware.js:64:75)
+    at async eval (webpack-internal:///(middleware)/./node_modules/next/dist/build/webpack/loaders/next-middleware-loader.js?absolutePagePath=%2Fhome%2Fkhanhngoo%2FDesktop%2FCOMP4040_Team12_FraudDetection%2Fweb%2Fmiddleware.ts&page=%2Fmiddleware&rootDir=%2Fhome%2Fkhanhngoo%2FDesktop%2FCOMP4040_Team12_FraudDetection%2Fweb&matchers=&preferredRegion=&middlewareConfig=e30%3D!:32:20)
+    at async eval (webpack-internal:///(middleware)/./node_modules/next/dist/esm/server/web/adapter.js:257:28)
+    at async adapter (webpack-internal:///(middleware)/./node_modules/next/dist/esm/server/web/adapter.js:212:16)
+    at async (file:///home/khanhngoo/Desktop/COMP4040_Team12_FraudDetection/web/node_modules/next/dist/server/web/sandbox/sandbox.js:112:26)
+    at async runWithTaggedErrors (file:///home/khanhngoo/Desktop/COMP4040_Team12_FraudDetection/web/node_modules/next/dist/server/web/sandbox/sandbox.js:109:9)
+    at async DevServer.runMiddleware (file:///home/khanhngoo/Desktop/COMP4040_Team12_FraudDetection/web/node_modules/next/dist/server/next-server.js:1262:22)
+[    3711ms] [LOG] [HMR] connected @ webpack-internal:///(pages-dir-browser)/./node_modules/next/dist/client/dev/hot-reloader/pages/websocket.js:45
+[    7161ms] [LOG] [Fast Refresh] rebuilding @ webpack-internal:///(pages-dir-browser)/./node_modules/next/dist/client/dev/hot-reloader/pages/hot-reloader-pages.js:206
+[    7193ms] [WARNING] [Fast Refresh] performing full reload because your application had an unrecoverable error @ webpack-internal:///(pages-dir-browser)/./node_modules/next/dist/client/dev/hot-reloader/pages/hot-reloader-pages.js:347
+[    7819ms] [WARNING] [Fast Refresh] performing full reload because your application had an unrecoverable error @ webpack-internal:///(pages-dir-browser)/./node_modules/next/dist/client/dev/hot-reloader/pages/hot-reloader-pages.js:347
+[    8060ms] [ERROR] Failed to load resource: the server responded with a status of 500 (Internal Server Error) @ http://localhost:3000/login:0
+[    8309ms] [INFO] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold @ webpack-internal:///(pages-dir-browser)/./node_modules/react-dom/cjs/react-dom-client.development.js:28004
+[    8332ms] Error: @clerk/nextjs: Missing secretKey. You can get your key at https://dashboard.clerk.com/last-active?path=api-keys.
+    at Object.throwMissingSecretKeyError (webpack-internal:///(middleware)/./node_modules/@clerk/shared/dist/runtime/_chunks/error-DAG0ASPV.mjs:299:10)
+    at eval (webpack-internal:///(middleware)/./node_modules/@clerk/nextjs/dist/esm/server/clerkMiddleware.js:66:72)
+    at assertKey (webpack-internal:///(middleware)/./node_modules/@clerk/nextjs/dist/esm/server/utils.js:122:5)
+    at eval (webpack-internal:///(middleware)/./node_modules/@clerk/nextjs/dist/esm/server/clerkMiddleware.js:64:75)
+    at async eval (webpack-internal:///(middleware)/./node_modules/next/dist/build/webpack/loaders/next-middleware-loader.js?absolutePagePath=%2Fhome%2Fkhanhngoo%2FDesktop%2FCOMP4040_Team12_FraudDetection%2Fweb%2Fmiddleware.ts&page=%2Fmiddleware&rootDir=%2Fhome%2Fkhanhngoo%2FDesktop%2FCOMP4040_Team12_FraudDetection%2Fweb&matchers=&preferredRegion=&middlewareConfig=e30%3D!:32:20)
+    at async eval (webpack-internal:///(middleware)/./node_modules/next/dist/esm/server/web/adapter.js:257:28)
+    at async adapter (webpack-internal:///(middleware)/./node_modules/next/dist/esm/server/web/adapter.js:212:16)
+    at async (file:///home/khanhngoo/Desktop/COMP4040_Team12_FraudDetection/web/node_modules/next/dist/server/web/sandbox/sandbox.js:112:26)
+    at async runWithTaggedErrors (file:///home/khanhngoo/Desktop/COMP4040_Team12_FraudDetection/web/node_modules/next/dist/server/web/sandbox/sandbox.js:109:9)
+    at async DevServer.runMiddleware (file:///home/khanhngoo/Desktop/COMP4040_Team12_FraudDetection/web/node_modules/next/dist/server/next-server.js:1262:22)
+[    8329ms] [LOG] [HMR] connected @ webpack-internal:///(pages-dir-browser)/./node_modules/next/dist/client/dev/hot-reloader/pages/websocket.js:45
+[   24952ms] [ERROR] WebSocket connection to 'ws://localhost:3000/_next/webpack-hmr' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED @ webpack-internal:///(pages-dir-browser)/./node_modules/next/dist/client/dev/hot-reloader/pages/websocket.js:88
+[   25953ms] [ERROR] WebSocket connection to 'ws://localhost:3000/_next/webpack-hmr' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED @ webpack-internal:///(pages-dir-browser)/./node_modules/next/dist/client/dev/hot-reloader/pages/websocket.js:88
+[   26955ms] [ERROR] WebSocket connection to 'ws://localhost:3000/_next/webpack-hmr' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED @ webpack-internal:///(pages-dir-browser)/./node_modules/next/dist/client/dev/hot-reloader/pages/websocket.js:88
+[   27957ms] [ERROR] WebSocket connection to 'ws://localhost:3000/_next/webpack-hmr' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED @ webpack-internal:///(pages-dir-browser)/./node_modules/next/dist/client/dev/hot-reloader/pages/websocket.js:88
+[   28958ms] [ERROR] WebSocket connection to 'ws://localhost:3000/_next/webpack-hmr' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED @ webpack-internal:///(pages-dir-browser)/./node_modules/next/dist/client/dev/hot-reloader/pages/websocket.js:88
+[   33961ms] [ERROR] WebSocket connection to 'ws://localhost:3000/_next/webpack-hmr' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED @ webpack-internal:///(pages-dir-browser)/./node_modules/next/dist/client/dev/hot-reloader/pages/websocket.js:88
+[   38965ms] [LOG] [HMR] connected @ webpack-internal:///(pages-dir-browser)/./node_modules/next/dist/client/dev/hot-reloader/pages/websocket.js:45
+[   38981ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://localhost:3000/_next/static/webpack/2fb601fb17940aed.webpack.hot-update.json:0
+[   38982ms] [WARNING] [Fast Refresh] performing full reload because your application had an unrecoverable error @ webpack-internal:///(pages-dir-browser)/./node_modules/next/dist/client/dev/hot-reloader/pages/hot-reloader-pages.js:347
+[   40044ms] [LOG] [Fast Refresh] rebuilding @ webpack-internal:///(pages-dir-browser)/./node_modules/next/dist/client/dev/hot-reloader/pages/hot-reloader-pages.js:206
+[   41878ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://localhost:3000/_next/static/webpack/2fb601fb17940aed.webpack.hot-update.json:0
+[   41879ms] [WARNING] [Fast Refresh] performing full reload because your application had an unrecoverable error @ webpack-internal:///(pages-dir-browser)/./node_modules/next/dist/client/dev/hot-reloader/pages/hot-reloader-pages.js:347
+[   42734ms] [INFO] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold @ webpack-internal:///(app-pages-browser)/./node_modules/next/dist/compiled/react-dom/cjs/react-dom-client.development.js:25630
+[   42913ms] [WARNING] Clerk: Clerk has been loaded with development keys. Development instances have strict usage limits and should not be used when deploying your application to production. Learn more: https://clerk.com/docs/deployments/overview @ https://happy-shepherd-11.clerk.accounts.dev/npm/@clerk/clerk-js@6/dist/clerk.browser.js:11
+[   43384ms] [LOG] [Fast Refresh] rebuilding @ webpack-internal:///(app-pages-browser)/./node_modules/next/dist/client/dev/hot-reloader/app/hot-reloader-app.js:196
+[   43546ms] [VERBOSE] [DOM] Input elements should have autocomplete attributes (suggested: "current-password"): (More info: https://goo.gl/9p2vKq) %o @ http://localhost:3000/login:0
+[   43632ms] [LOG] [Fast Refresh] done in 249ms @ webpack-internal:///(app-pages-browser)/./node_modules/next/dist/client/dev/report-hmr-latency.js:13
+[   44124ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://localhost:3000/login/SignIn_clerk_catchall_check_1780878307177:0
+[   44125ms] Error: 
+Clerk: The <SignIn/> component is not configured correctly. The most likely reasons for this error are:
+
+1. The "/login" route is not a catch-all route.
+It is recommended to convert this route to a catch-all route, eg: "/login/[[...rest]]/page.tsx". Alternatively, you can update the <SignIn/> component to use hash-based routing by setting the "routing" prop to "hash".
+
+2. The <SignIn/> component is mounted in a catch-all route, but all routes under "/login" are protected by the middleware.
+To resolve this, ensure that the middleware does not protect the catch-all route or any of its children. If you are using the "createRouteMatcher" helper, consider adding "(.*)" to the end of the route pattern, eg: "/login(.*)". For more information, see: https://clerk.com/docs/reference/nextjs/clerk-middleware#create-route-matcher
+
+    at error (webpack-internal:///(app-pages-browser)/./node_modules/@clerk/nextjs/dist/esm/client-boundary/hooks/useEnforceCatchAllRoute.js:32:13)
+    at check (webpack-internal:///(app-pages-browser)/./node_modules/@clerk/nextjs/dist/esm/client-boundary/hooks/useEnforceCatchAllRoute.js:61:11)

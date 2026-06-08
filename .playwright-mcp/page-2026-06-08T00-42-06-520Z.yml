@@ -1,0 +1,55 @@
+- generic [active] [ref=e1]:
+  - generic [ref=e5]:
+    - generic [ref=e6]:
+      - generic [ref=e8]:
+        - heading "Create your account" [level=1] [ref=e9]
+        - paragraph [ref=e10]: Welcome! Please fill in the details to get started.
+      - generic [ref=e11]:
+        - generic [ref=e13]:
+          - button "Sign in with Google Continue with Google" [disabled]:
+            - generic:
+              - generic:
+                - generic "Sign in with Google"
+              - generic: Continue with Google
+        - paragraph [ref=e21]: or
+        - generic [ref=e23]:
+          - generic [ref=e24]:
+            - generic [ref=e27]:
+              - generic [ref=e28]:
+                - generic: Email address
+              - textbox "Email address" [disabled]:
+                - /placeholder: Enter your email address
+                - text: codex-auth-verify-1@example.com
+            - generic [ref=e33]:
+              - generic [ref=e34]:
+                - generic [ref=e35]:
+                  - generic: Password
+                - generic [ref=e37]:
+                  - textbox "Password" [disabled]:
+                    - /placeholder: Create a password
+                    - text: Q7v!r2$k9Zp4#Lm4
+                  - button "Show password" [ref=e39] [cursor=pointer]:
+                    - img [ref=e40]
+              - generic [ref=e43]: Your password meets all the necessary requirements.
+              - paragraph [ref=e76]:
+                - img [ref=e77]
+                - text: Your password meets all the necessary requirements.
+          - generic [ref=e45]:
+            - button "Loading" [disabled]:
+              - generic:
+                - generic "Loading"
+    - generic [ref=e50]:
+      - generic [ref=e51]:
+        - generic [ref=e52]: Already have an account?
+        - link "Sign in" [ref=e53] [cursor=pointer]:
+          - /url: http://localhost:3000/login
+      - generic [ref=e55]:
+        - generic [ref=e57]:
+          - paragraph [ref=e58]: Secured by
+          - link "Clerk logo" [ref=e59] [cursor=pointer]:
+            - /url: https://go.clerk.com/components
+            - img [ref=e60]
+        - paragraph [ref=e65]: Development mode
+  - button "Open Next.js Dev Tools" [ref=e71] [cursor=pointer]:
+    - img [ref=e72]
+  - alert [ref=e3]

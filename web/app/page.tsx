@@ -22,9 +22,9 @@ export default function HomePage() {
   return (
     <div className="fullscreen-center">
       <section className="panel landing-card">
-        <p className="eyebrow">Fraud Analyst Dashboard</p>
+        <p className="eyebrow">Fraud Ops Dashboard</p>
         <h2>Preparing your workspace</h2>
-        <p>Checking your session and routing you into the analyst workflow.</p>
+        <p>Checking your session and routing you into the dashboard.</p>
       </section>
     </div>
   );

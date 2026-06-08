@@ -11,8 +11,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.exc import OperationalError
 
 from ..config import Settings, get_settings
-from ..database import dispose_engine, get_session_factory, init_db
-from ..services import AuthService
+from ..database import dispose_engine, init_db
 from .routes import router
 
 if TYPE_CHECKING:
@@ -32,13 +31,6 @@ def create_app(settings: Settings | None = None, runtime: ProductionScoringRunti
                 if attempt == 10:
                     raise
                 sleep(2)
-        session = get_session_factory(app.state.settings.database_url)()
-        try:
-            auth_service = AuthService(session=session, settings=app.state.settings)
-            auth_service.bootstrap_users()
-            session.commit()
-        finally:
-            session.close()
 
         try:
             yield

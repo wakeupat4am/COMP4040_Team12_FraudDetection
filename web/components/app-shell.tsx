@@ -19,7 +19,7 @@ export function AppShell({ title, description, children }: AppShellProps) {
   const links = [
     { href: "/score", label: "Score Intake" },
     { href: "/cases", label: "Case Queue" },
-    ...(session?.role === "manager_admin" ? [{ href: "/metrics", label: "Metrics" }] : []),
+    { href: "/metrics", label: "Metrics" },
   ];
 
   return (
@@ -27,9 +27,9 @@ export function AppShell({ title, description, children }: AppShellProps) {
       <aside className="sidebar panel">
         <div className="brand-lockup">
           <p className="eyebrow">Fraud Ops Console</p>
-          <h1>Analyst Command</h1>
+          <h1>Operations Command</h1>
           <p className="sidebar-copy">
-            Work a live fraud queue, rescore risky transactions, and close the loop with confirmed outcomes.
+            Work the fraud queue, rescore risky transactions, and close the loop with confirmed outcomes.
           </p>
         </div>
         <nav className="nav-list">
@@ -46,7 +46,7 @@ export function AppShell({ title, description, children }: AppShellProps) {
           <div className="user-badge">
             <span className="eyebrow">Signed In</span>
             <strong>{session?.username}</strong>
-            <span>{session?.role === "manager_admin" ? "Manager Admin" : "Analyst"}</span>
+            <span>Authenticated User</span>
           </div>
           <button type="button" className="ghost-button" onClick={logout}>
             Log Out

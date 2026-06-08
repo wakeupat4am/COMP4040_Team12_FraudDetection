@@ -1,0 +1,56 @@
+- generic [active] [ref=e1]:
+  - generic [ref=e4]:
+    - generic [ref=e5]:
+      - generic [ref=e7]:
+        - heading "Sign in to datamining" [level=1] [ref=e8]
+        - paragraph [ref=e9]: Welcome back! Please sign in to continue
+      - generic [ref=e10]:
+        - button "Sign in with Google Continue with Google" [ref=e13] [cursor=pointer]:
+          - generic [ref=e14]:
+            - generic "Sign in with Google" [ref=e16]
+            - generic [ref=e17]: Continue with Google
+        - paragraph [ref=e20]: or
+        - generic [ref=e22]:
+          - generic [ref=e23]:
+            - generic [ref=e26]:
+              - generic [ref=e28]: Email address
+              - textbox "Email address" [ref=e29]:
+                - /placeholder: Enter your email address
+            - generic:
+              - generic:
+                - generic:
+                  - generic:
+                    - generic: Password
+                  - generic:
+                    - textbox "Password":
+                      - /placeholder: Enter your password
+                    - button "Show password":
+                      - img
+          - button "Continue" [ref=e32] [cursor=pointer]:
+            - generic [ref=e33]:
+              - text: Continue
+              - img [ref=e34]
+    - generic [ref=e36]:
+      - generic [ref=e37]:
+        - generic [ref=e38]: Don’t have an account?
+        - link "Sign up" [ref=e39] [cursor=pointer]:
+          - /url: http://localhost:3000/login
+      - generic [ref=e41]:
+        - generic [ref=e43]:
+          - paragraph [ref=e44]: Secured by
+          - link "Clerk logo" [ref=e45] [cursor=pointer]:
+            - /url: https://go.clerk.com/components
+            - img [ref=e46]
+        - paragraph [ref=e51]: Development mode
+  - generic [ref=e56] [cursor=pointer]:
+    - button "Open Next.js Dev Tools" [ref=e57]:
+      - img [ref=e58]
+    - generic [ref=e61]:
+      - button "Open issues overlay" [ref=e62]:
+        - generic [ref=e63]:
+          - generic [ref=e64]: "0"
+          - generic [ref=e65]: "1"
+        - generic [ref=e66]: Issue
+      - button "Collapse issues badge" [ref=e67]:
+        - img [ref=e68]
+  - alert [ref=e70]

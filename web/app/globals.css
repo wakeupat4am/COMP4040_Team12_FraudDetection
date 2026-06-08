@@ -450,6 +450,14 @@ th {
   width: min(560px, 100%);
 }
 
+.login-screen {
+  display: grid;
+  place-items: center;
+  min-height: 100vh;
+  padding: 24px;
+  background: #000;
+}
+
 @media (max-width: 1120px) {
   .dashboard,
   .summary-grid,

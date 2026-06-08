@@ -1,0 +1,5 @@
+- generic [active] [ref=e1]:
+  - generic [ref=e3]:
+    - paragraph [ref=e4]: Fraud Ops Console
+    - heading "Sign in to the analyst dashboard" [level=2] [ref=e5]
+  - alert [ref=e6]
