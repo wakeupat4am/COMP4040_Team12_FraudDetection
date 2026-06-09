@@ -5,22 +5,22 @@ import { Suspense } from "react";
 
 export default function SignUpPage() {
   return (
-    <Suspense fallback={<div className="login-screen" />}>
-      <div className="login-screen">
+    <Suspense fallback={<div className="grid min-h-screen place-items-center bg-background" />}>
+      <div className="grid min-h-screen place-items-center bg-background p-6">
         <SignUp
           routing="hash"
           signInUrl="/login"
           appearance={{
             variables: {
-              colorBackground: "#000000",
-              colorPrimary: "#ffffff",
-              colorText: "#ffffff",
-              colorTextSecondary: "#a1a1aa",
-              colorInputBackground: "#000000",
-              colorInputText: "#ffffff",
-              colorInputBorder: "#2a2a2a",
-              colorShimmer: "#111111",
-              colorDanger: "#ff6b6b",
+              colorBackground: "var(--card)",
+              colorPrimary: "var(--primary)",
+              colorText: "var(--foreground)",
+              colorTextSecondary: "var(--muted-foreground)",
+              colorInputBackground: "var(--input)",
+              colorInputText: "var(--foreground)",
+              colorInputBorder: "var(--border)",
+              colorDanger: "var(--destructive)",
+              borderRadius: "0.75rem",
             },
           }}
         />

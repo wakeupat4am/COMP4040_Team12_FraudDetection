@@ -1,20 +1,20 @@
 import { titleCase } from "@/lib/formatters";
+import { Badge } from "@/components/ui/badge";
 
-const toneByValue: Record<string, string> = {
-  block: "pill-danger",
-  critical: "pill-danger",
-  fraud: "pill-danger",
-  review: "pill-warning",
-  high: "pill-warning",
-  reviewed: "pill-info",
-  allow: "pill-success",
-  low: "pill-success",
-  legitimate: "pill-success",
-  pending: "pill-neutral",
-  medium: "pill-info",
+const toneByValue: Record<string, "default" | "secondary" | "destructive" | "outline"> = {
+  allow: "default",
+  legitimate: "default",
+  low: "default",
+  block: "destructive",
+  critical: "destructive",
+  fraud: "destructive",
+  high: "destructive",
+  medium: "secondary",
+  pending: "outline",
+  review: "secondary",
+  reviewed: "outline",
 };
 
 export function StatusPill({ value }: { value: string }) {
-  const toneClass = toneByValue[value] ?? "pill-neutral";
-  return <span className={`status-pill ${toneClass}`}>{titleCase(value)}</span>;
+  return <Badge variant={toneByValue[value] ?? "outline"}>{titleCase(value)}</Badge>;
 }

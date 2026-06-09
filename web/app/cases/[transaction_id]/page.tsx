@@ -2,11 +2,32 @@
 
 import { FormEvent, useEffect, useState } from "react";
 import { useParams } from "next/navigation";
+import {
+  BrainIcon,
+  CheckCircle2Icon,
+  HistoryIcon,
+  RefreshCwIcon,
+  SaveIcon,
+  ShieldAlertIcon,
+  SlidersHorizontalIcon,
+} from "lucide-react";
 
 import { EmptyState } from "@/components/empty-state";
 import { GuardedPage } from "@/components/guarded-page";
 import { JsonCard } from "@/components/json-card";
 import { StatusPill } from "@/components/status-pill";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Separator } from "@/components/ui/separator";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Textarea } from "@/components/ui/textarea";
 import { ApiError, analyzeCaseWithGemini, getCaseDetail, rescoreCase, submitDecision, submitFeedback } from "@/lib/api";
 import { formatDateTime, formatScore, titleCase } from "@/lib/formatters";
 import { useAuthedRequest } from "@/hooks/use-authed-request";
@@ -19,17 +40,39 @@ function scorePercent(value: number): string {
   return `${Math.round(bounded * 100)}%`;
 }
 
-function renderList(items: string[], emptyLabel: string) {
-  if (items.length === 0) {
-    return <p className="muted-copy">{emptyLabel}</p>;
-  }
-
+function SignalList({ title, items, emptyLabel }: { title: string; items: string[]; emptyLabel: string }) {
   return (
-    <ul className="bullet-list compact-list">
-      {items.map((item, index) => (
-        <li key={`${item}-${index}`}>{item}</li>
-      ))}
-    </ul>
+    <Card size="sm" className="bg-muted/30">
+      <CardHeader>
+        <CardTitle className="text-sm">{title}</CardTitle>
+      </CardHeader>
+      <CardContent>
+        {items.length === 0 ? (
+          <p className="text-sm text-muted-foreground">{emptyLabel}</p>
+        ) : (
+          <ul className="grid gap-2 text-sm text-muted-foreground">
+            {items.map((item, index) => (
+              <li key={`${item}-${index}`} className="flex gap-2">
+                <span className="mt-2 size-1.5 shrink-0 rounded-full bg-primary" />
+                <span>{item}</span>
+              </li>
+            ))}
+          </ul>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
+function LoadingDetail() {
+  return (
+    <div className="grid gap-4">
+      <Skeleton className="h-36 w-full" />
+      <div className="grid gap-4 lg:grid-cols-3">
+        <Skeleton className="h-56 w-full" />
+        <Skeleton className="h-56 w-full lg:col-span-2" />
+      </div>
+    </div>
   );
 }
 
@@ -57,11 +100,13 @@ export default function CaseDetailPage() {
       setDecision(response.latest_analyst_decision ?? "review");
       setDecisionNote(response.latest_note ?? DEFAULT_DECISION_NOTE);
     } catch (caughtError) {
-      if (caughtError instanceof ApiError) {
-        setError(caughtError.message);
-      } else {
-        setError(caughtError instanceof Error ? caughtError.message : "Unable to load case detail.");
-      }
+      setError(
+        caughtError instanceof ApiError
+          ? caughtError.message
+          : caughtError instanceof Error
+            ? caughtError.message
+            : "Unable to load case detail.",
+      );
     } finally {
       setLoading(false);
     }
@@ -147,364 +192,410 @@ export default function CaseDetailPage() {
   }
 
   const modelScores = detail
-    ? [
+    ? ([
         ["LightGBM", detail.latest_output.model_scores_overview.LightGBM],
         ["AdaBoost", detail.latest_output.model_scores_overview.AdaBoost],
         ["Event GNN", detail.latest_output.model_scores_overview.Event_GNN],
-      ] as const
+      ] as const)
     : [];
   const stateEntries = detail ? Object.entries(detail.latest_output.required_state_status) : [];
   const geminiAnalysis = detail?.latest_gemini_analysis ?? null;
 
   return (
     <GuardedPage
-      title={`Case Detail: ${transactionId}`}
-      description="Review a stored fraud case, inspect aligned scoring output, and take analyst actions without leaving the browser."
+      title="Case Detail"
+      description="Inspect risk evidence, request AI advisory support, and record the official analyst outcome."
     >
-      {error ? <div className="error-banner">{error}</div> : null}
-      {successMessage ? <div className="success-banner">{successMessage}</div> : null}
-      {loading ? (
-        <section className="panel">
-          <p>Loading case detail...</p>
-        </section>
+      {error ? (
+        <Alert variant="destructive">
+          <AlertTitle>Case workflow error</AlertTitle>
+          <AlertDescription>{error}</AlertDescription>
+        </Alert>
       ) : null}
+      {successMessage ? (
+        <Alert className="border-primary/30 bg-primary/10">
+          <CheckCircle2Icon className="size-4" />
+          <AlertTitle>Saved</AlertTitle>
+          <AlertDescription>{successMessage}</AlertDescription>
+        </Alert>
+      ) : null}
+
+      {loading ? <LoadingDetail /> : null}
+
       {!loading && !detail ? (
         <EmptyState title="Case not found" description="This transaction could not be loaded from the workflow store." />
       ) : null}
 
       {detail ? (
         <>
-          <section className="case-command-bar panel">
-            <div className="case-command-main">
-              <span className="eyebrow">Transaction</span>
-              <h3>{transactionId}</h3>
-              <p>Last scored {formatDateTime(detail.last_scored_at)} with {detail.latest_output.pipeline_profile}.</p>
-            </div>
-            <div className="case-command-actions">
-              <div className="case-status-strip">
-                <div>
-                  <span className="eyebrow">Model Decision</span>
-                  <StatusPill value={detail.latest_output.decision} />
-                </div>
-                <div>
-                  <span className="eyebrow">Review Status</span>
-                  <StatusPill value={detail.review_status} />
-                </div>
-              </div>
-              <div className="button-row">
-                <button
-                  type="button"
-                  className="secondary-button"
-                  onClick={handleRescore}
-                  disabled={busyAction === "rescore"}
-                >
-                  {busyAction === "rescore" ? "Rescoring..." : "Rescore Case"}
-                </button>
-                <button
-                  type="button"
-                  className="primary-button"
-                  onClick={handleGeminiAnalysis}
-                  disabled={busyAction === "gemini"}
-                >
-                  {busyAction === "gemini" ? "Analyzing..." : "Analyze with Gemini"}
-                </button>
-              </div>
-            </div>
-          </section>
-
-          <section className="risk-dashboard">
-            <section className="score-hero panel">
-              <span className="eyebrow">Fraud Score</span>
-              <strong>{formatScore(detail.latest_output.fraud_score)}</strong>
-              <div className="score-rail" aria-label="Fraud score visual indicator">
-                <span style={{ width: scorePercent(detail.latest_output.fraud_score) }} />
-              </div>
-              <div className="score-hero-meta">
-                <span>Threshold {formatScore(detail.latest_output.threshold)}</span>
-                <span>Risk bucket: {titleCase(detail.risk_bucket)}</span>
-              </div>
-            </section>
-
-            <section className="panel">
-              <div className="panel-header compact-panel-header">
-                <div>
-                  <h3>Model signals</h3>
-                  <p>{detail.latest_output.explanation_summary.reason}</p>
-                </div>
-              </div>
-              <div className="model-score-list">
-                {modelScores.map(([label, score]) => (
-                  <div key={label} className="model-score-row">
-                    <div>
-                      <strong>{label}</strong>
-                      <span>{formatScore(score)}</span>
-                    </div>
-                    <div className="model-score-bar" aria-label={`${label} score ${formatScore(score)}`}>
-                      <span style={{ width: scorePercent(score) }} />
-                    </div>
+          <Card>
+            <CardHeader>
+              <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+                <div className="min-w-0 space-y-2">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <Badge variant="outline">Transaction</Badge>
+                    <span className="break-all font-mono text-sm text-muted-foreground">{transactionId}</span>
                   </div>
-                ))}
+                  <CardTitle className="text-2xl">Risk score {formatScore(detail.latest_output.fraud_score)}</CardTitle>
+                  <CardDescription>
+                    Last scored {formatDateTime(detail.last_scored_at)} with {detail.latest_output.pipeline_profile}.
+                  </CardDescription>
+                </div>
+                <div className="grid gap-3 sm:grid-cols-[auto_auto] lg:justify-items-end">
+                  <div className="flex flex-wrap gap-2">
+                    <StatusPill value={detail.latest_output.decision} />
+                    <StatusPill value={detail.review_status} />
+                    <StatusPill value={detail.risk_bucket} />
+                  </div>
+                  <div className="flex flex-wrap gap-2 sm:col-span-2 lg:justify-end">
+                    <Button type="button" variant="outline" onClick={handleRescore} disabled={busyAction === "rescore"}>
+                      <RefreshCwIcon className="size-4" />
+                      {busyAction === "rescore" ? "Rescoring" : "Rescore"}
+                    </Button>
+                    <Button type="button" onClick={handleGeminiAnalysis} disabled={busyAction === "gemini"}>
+                      <BrainIcon className="size-4" />
+                      {busyAction === "gemini" ? "Analyzing" : geminiAnalysis ? "Refresh advisory" : "Analyze"}
+                    </Button>
+                  </div>
+                </div>
               </div>
-            </section>
+            </CardHeader>
+            <CardContent>
+              <div className="grid gap-3 md:grid-cols-3">
+                <div className="rounded-2xl border bg-muted/30 p-4">
+                  <p className="text-xs text-muted-foreground">Threshold</p>
+                  <p className="mt-1 text-lg font-medium">{formatScore(detail.latest_output.threshold)}</p>
+                </div>
+                <div className="rounded-2xl border bg-muted/30 p-4">
+                  <p className="text-xs text-muted-foreground">Model decision</p>
+                  <div className="mt-2">
+                    <StatusPill value={detail.latest_output.decision} />
+                  </div>
+                </div>
+                <div className="rounded-2xl border bg-muted/30 p-4">
+                  <p className="text-xs text-muted-foreground">Latest analyst decision</p>
+                  <div className="mt-2">
+                    <StatusPill value={detail.latest_analyst_decision ?? "pending"} />
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
 
-            <section className="panel">
-              <div className="panel-header compact-panel-header">
-                <div>
-                  <h3>Explanation</h3>
-                  <p>Signals used to route the current case.</p>
-                </div>
-              </div>
-              <div className="signal-grid">
-                <div className="signal-item">
-                  <span className="eyebrow">Main Source</span>
-                  <strong>{titleCase(detail.latest_output.explanation_summary.main_risk_source)}</strong>
-                </div>
-                <div className="signal-item">
-                  <span className="eyebrow">Tabular Signal</span>
-                  <StatusPill value={detail.latest_output.explanation_summary.tabular_signal} />
-                </div>
-                <div className="signal-item">
-                  <span className="eyebrow">Graph Signal</span>
-                  <StatusPill value={detail.latest_output.explanation_summary.graph_signal} />
-                </div>
-              </div>
-              <div className="state-strip">
-                {stateEntries.map(([key, available]) => (
-                  <span key={key} className={available ? "state-chip state-chip-ok" : "state-chip state-chip-muted"}>
-                    {titleCase(key)}: {available ? "Available" : "Limited"}
-                  </span>
-                ))}
-              </div>
-            </section>
-          </section>
+          <Tabs defaultValue="overview" className="gap-4">
+            <TabsList variant="line" className="w-full justify-start overflow-x-auto">
+              <TabsTrigger value="overview">
+                <ShieldAlertIcon className="size-4" />
+                Overview
+              </TabsTrigger>
+              <TabsTrigger value="advisory">
+                <BrainIcon className="size-4" />
+                Advisory
+              </TabsTrigger>
+              <TabsTrigger value="decision">
+                <SaveIcon className="size-4" />
+                Decision
+              </TabsTrigger>
+              <TabsTrigger value="evidence">
+                <SlidersHorizontalIcon className="size-4" />
+                Evidence
+              </TabsTrigger>
+              <TabsTrigger value="history">
+                <HistoryIcon className="size-4" />
+                History
+              </TabsTrigger>
+            </TabsList>
 
-          <section className="review-workspace">
-            <section className="gemini-panel panel">
-              <div className="panel-header">
-                <div>
-                  <h3>Gemini advisory</h3>
-                  <p>AI recommendation based on the current score snapshot. Analyst decision remains the official action.</p>
-                </div>
-                <button
-                  type="button"
-                  className="secondary-button"
-                  onClick={handleGeminiAnalysis}
-                  disabled={busyAction === "gemini"}
-                >
-                  {busyAction === "gemini" ? "Analyzing..." : geminiAnalysis ? "Refresh Gemini" : "Analyze"}
-                </button>
-              </div>
-              {geminiAnalysis ? (
-                <>
-                  <div className="gemini-summary-card">
-                    <div className="case-status-strip">
-                      <div>
-                        <span className="eyebrow">Recommendation</span>
-                        <StatusPill value={geminiAnalysis.recommended_decision} />
+            <TabsContent value="overview" className="grid gap-4">
+              <div className="grid gap-4 lg:grid-cols-[0.8fr_1.2fr_1fr]">
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Fraud score</CardTitle>
+                    <CardDescription>Current model output</CardDescription>
+                  </CardHeader>
+                  <CardContent className="grid gap-5">
+                    <div className="font-heading text-6xl font-medium tracking-tight">
+                      {formatScore(detail.latest_output.fraud_score)}
+                    </div>
+                    <div className="h-3 overflow-hidden rounded-full bg-muted">
+                      <div className="h-full rounded-full bg-primary" style={{ width: scorePercent(detail.latest_output.fraud_score) }} />
+                    </div>
+                    <p className="text-sm text-muted-foreground">
+                      {titleCase(detail.risk_bucket)} risk with a {formatScore(detail.latest_output.threshold)} threshold.
+                    </p>
+                  </CardContent>
+                </Card>
+
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Model signals</CardTitle>
+                    <CardDescription>{detail.latest_output.explanation_summary.reason}</CardDescription>
+                  </CardHeader>
+                  <CardContent className="grid gap-4">
+                    {modelScores.map(([label, score]) => (
+                      <div key={label} className="grid gap-2">
+                        <div className="flex items-center justify-between gap-3 text-sm">
+                          <span className="font-medium">{label}</span>
+                          <span className="text-muted-foreground">{formatScore(score)}</span>
+                        </div>
+                        <div className="h-2 overflow-hidden rounded-full bg-muted">
+                          <div className="h-full rounded-full bg-primary" style={{ width: scorePercent(score) }} />
+                        </div>
                       </div>
-                      <div>
-                        <span className="eyebrow">Confidence</span>
-                        <StatusPill value={geminiAnalysis.confidence} />
+                    ))}
+                  </CardContent>
+                </Card>
+
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Explanation</CardTitle>
+                    <CardDescription>Signals used to route this case</CardDescription>
+                  </CardHeader>
+                  <CardContent className="grid gap-3">
+                    <div className="rounded-2xl border bg-muted/30 p-3">
+                      <p className="text-xs text-muted-foreground">Main source</p>
+                      <p className="mt-1 font-medium">{titleCase(detail.latest_output.explanation_summary.main_risk_source)}</p>
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                      <StatusPill value={detail.latest_output.explanation_summary.tabular_signal} />
+                      <StatusPill value={detail.latest_output.explanation_summary.graph_signal} />
+                    </div>
+                    <Separator />
+                    <div className="flex flex-wrap gap-2">
+                      {stateEntries.map(([key, available]) => (
+                        <Badge key={key} variant={available ? "secondary" : "outline"}>
+                          {titleCase(key)}: {available ? "Available" : "Limited"}
+                        </Badge>
+                      ))}
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+            </TabsContent>
+
+            <TabsContent value="advisory" className="grid gap-4">
+              <Card>
+                <CardHeader>
+                  <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
+                    <div>
+                      <CardTitle>Gemini advisory</CardTitle>
+                      <CardDescription>Advisory support only. The analyst decision remains the official action.</CardDescription>
+                    </div>
+                    <Button type="button" variant="outline" onClick={handleGeminiAnalysis} disabled={busyAction === "gemini"}>
+                      <BrainIcon className="size-4" />
+                      {busyAction === "gemini" ? "Analyzing" : geminiAnalysis ? "Refresh analysis" : "Analyze"}
+                    </Button>
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  {geminiAnalysis ? (
+                    <div className="grid gap-4">
+                      <div className="rounded-2xl border bg-muted/30 p-4">
+                        <div className="mb-3 flex flex-wrap gap-2">
+                          <StatusPill value={geminiAnalysis.recommended_decision} />
+                          <StatusPill value={geminiAnalysis.confidence} />
+                        </div>
+                        <p className="text-sm leading-6">{geminiAnalysis.summary}</p>
+                        <div className="mt-4 flex flex-wrap gap-2 text-xs text-muted-foreground">
+                          <span>{geminiAnalysis.model}</span>
+                          <span>{formatDateTime(geminiAnalysis.analyzed_at)}</span>
+                          <span>Score run {geminiAnalysis.source_score_run_id}</span>
+                        </div>
+                      </div>
+                      <div className="grid gap-4 lg:grid-cols-3">
+                        <SignalList title="Key factors" items={geminiAnalysis.key_factors} emptyLabel="No key factors returned." />
+                        <SignalList title="Risk flags" items={geminiAnalysis.risk_flags} emptyLabel="No risk flags returned." />
+                        <SignalList title="Follow-up" items={geminiAnalysis.follow_up_actions} emptyLabel="No follow-up actions returned." />
                       </div>
                     </div>
-                    <p>{geminiAnalysis.summary}</p>
-                    <div className="advisory-meta">
-                      <span>{geminiAnalysis.model}</span>
-                      <span>{formatDateTime(geminiAnalysis.analyzed_at)}</span>
-                      <span>Score run {geminiAnalysis.source_score_run_id}</span>
+                  ) : (
+                    <EmptyState
+                      title="No Gemini analysis yet"
+                      description="Run Gemini analysis manually to add an advisory recommendation for this case."
+                    />
+                  )}
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            <TabsContent value="decision" className="grid gap-4 lg:grid-cols-2">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Official analyst decision</CardTitle>
+                  <CardDescription>Record the decision that becomes part of the review workflow.</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <form className="grid gap-4" onSubmit={handleDecision}>
+                    <div className="grid gap-2">
+                      <Label htmlFor="analyst_decision">Decision</Label>
+                      <Select value={decision} onValueChange={(value) => setDecision((value ?? "review") as DecisionValue)}>
+                        <SelectTrigger id="analyst_decision" className="w-full">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="allow">Allow</SelectItem>
+                          <SelectItem value="review">Review</SelectItem>
+                          <SelectItem value="block">Block</SelectItem>
+                        </SelectContent>
+                      </Select>
                     </div>
-                  </div>
-                  <div className="advisory-list-grid">
-                    <div>
-                      <h4>Key factors</h4>
-                      {renderList(geminiAnalysis.key_factors, "No key factors returned.")}
+                    <div className="grid gap-2">
+                      <Label htmlFor="decision_note">Decision note</Label>
+                      <Textarea
+                        id="decision_note"
+                        className="min-h-32"
+                        value={decisionNote}
+                        onChange={(event) => setDecisionNote(event.target.value)}
+                      />
                     </div>
-                    <div>
-                      <h4>Risk flags</h4>
-                      {renderList(geminiAnalysis.risk_flags, "No risk flags returned.")}
+                    <Button type="submit" className="w-fit" disabled={busyAction === "decision"}>
+                      <SaveIcon className="size-4" />
+                      {busyAction === "decision" ? "Submitting" : "Submit decision"}
+                    </Button>
+                  </form>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle>Confirmed feedback</CardTitle>
+                  <CardDescription>Store the observed final outcome separately from analyst notes.</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <form className="grid gap-4" onSubmit={handleFeedback}>
+                    <div className="grid gap-2">
+                      <Label htmlFor="feedback_label">Confirmed label</Label>
+                      <Select
+                        value={feedbackLabel}
+                        onValueChange={(value) => setFeedbackLabel((value ?? "fraud") as ConfirmedLabelValue)}
+                      >
+                        <SelectTrigger id="feedback_label" className="w-full">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="fraud">Fraud</SelectItem>
+                          <SelectItem value="legitimate">Legitimate</SelectItem>
+                        </SelectContent>
+                      </Select>
                     </div>
-                    <div>
-                      <h4>Follow-up</h4>
-                      {renderList(geminiAnalysis.follow_up_actions, "No follow-up actions returned.")}
+                    <div className="grid gap-2">
+                      <Label htmlFor="feedback_timestamp">Feedback timestamp</Label>
+                      <Input
+                        id="feedback_timestamp"
+                        type="datetime-local"
+                        value={feedbackTime}
+                        onChange={(event) => setFeedbackTime(event.target.value)}
+                      />
                     </div>
-                  </div>
-                </>
-              ) : (
-                <EmptyState
-                  title="No Gemini analysis yet"
-                  description="Run Gemini analysis manually to add an advisory recommendation for this case."
-                />
-              )}
-            </section>
+                    <div className="grid gap-2">
+                      <Label htmlFor="feedback_note">Feedback note</Label>
+                      <Textarea
+                        id="feedback_note"
+                        className="min-h-28"
+                        value={feedbackNote}
+                        onChange={(event) => setFeedbackNote(event.target.value)}
+                      />
+                    </div>
+                    <Button type="submit" variant="outline" className="w-fit" disabled={busyAction === "feedback"}>
+                      <SaveIcon className="size-4" />
+                      {busyAction === "feedback" ? "Saving" : "Submit feedback"}
+                    </Button>
+                  </form>
+                </CardContent>
+              </Card>
+            </TabsContent>
 
-            <section className="panel">
-              <div className="panel-header">
-                <div>
-                  <h3>Official analyst decision</h3>
-                  <p>Record the decision that becomes part of the review workflow.</p>
-                </div>
-              </div>
-              <form className="form-grid" onSubmit={handleDecision}>
-                <div className="field-group full-width">
-                  <label htmlFor="analyst_decision">Decision</label>
-                  <select
-                    id="analyst_decision"
-                    className="select-input"
-                    value={decision}
-                    onChange={(event) => setDecision(event.target.value as DecisionValue)}
-                  >
-                    <option value="allow">Allow</option>
-                    <option value="review">Review</option>
-                    <option value="block">Block</option>
-                  </select>
-                </div>
-                <div className="field-group full-width">
-                  <label htmlFor="decision_note">Note</label>
-                  <textarea
-                    id="decision_note"
-                    className="text-area"
-                    value={decisionNote}
-                    onChange={(event) => setDecisionNote(event.target.value)}
-                  />
-                </div>
-                <div className="button-row">
-                  <button type="submit" className="primary-button" disabled={busyAction === "decision"}>
-                    {busyAction === "decision" ? "Submitting..." : "Submit Decision"}
-                  </button>
-                </div>
-              </form>
-            </section>
-          </section>
+            <TabsContent value="evidence" className="grid gap-4 lg:grid-cols-3">
+              <JsonCard title="Original request payload" value={detail.original_request_payload} />
+              <JsonCard title="Explanation payload" value={detail.explanation_payload} />
+              <JsonCard title="Routing metadata" value={detail.routing_metadata} />
+            </TabsContent>
 
-          <section className="panel">
-            <div className="panel-header">
-              <div>
-                <h3>Confirmed feedback</h3>
-                <p>Record the observed final outcome separately from analyst review history.</p>
-              </div>
-            </div>
-            <form className="form-grid" onSubmit={handleFeedback}>
-              <div className="field-group">
-                <label htmlFor="feedback_label">Confirmed Label</label>
-                <select
-                  id="feedback_label"
-                  className="select-input"
-                  value={feedbackLabel}
-                  onChange={(event) => setFeedbackLabel(event.target.value as ConfirmedLabelValue)}
-                >
-                  <option value="fraud">Fraud</option>
-                  <option value="legitimate">Legitimate</option>
-                </select>
-              </div>
-              <div className="field-group">
-                <label htmlFor="feedback_timestamp">Feedback Timestamp</label>
-                <input
-                  id="feedback_timestamp"
-                  className="text-input"
-                  type="datetime-local"
-                  value={feedbackTime}
-                  onChange={(event) => setFeedbackTime(event.target.value)}
-                />
-              </div>
-              <div className="field-group full-width">
-                <label htmlFor="feedback_note">Feedback Note</label>
-                <textarea
-                  id="feedback_note"
-                  className="text-area"
-                  value={feedbackNote}
-                  onChange={(event) => setFeedbackNote(event.target.value)}
-                />
-              </div>
-              <div className="button-row">
-                <button type="submit" className="secondary-button" disabled={busyAction === "feedback"}>
-                  {busyAction === "feedback" ? "Saving..." : "Submit Feedback"}
-                </button>
-              </div>
-            </form>
-          </section>
+            <TabsContent value="history" className="grid gap-4 xl:grid-cols-3">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Review history</CardTitle>
+                  <CardDescription>Analyst workflow actions stored on the case.</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  {detail.review_history.length === 0 ? (
+                    <EmptyState title="No review history yet" description="Submit the first analyst decision to populate this timeline." />
+                  ) : (
+                    <ScrollArea className="max-h-96">
+                      <div className="grid gap-3 pr-3">
+                        {detail.review_history.map((entry, index) => (
+                          <article key={`${entry.created_at}-${index}`} className="rounded-2xl border bg-muted/30 p-3">
+                            <div className="flex flex-wrap items-center justify-between gap-2">
+                              <strong className="text-sm">{entry.analyst_username ?? "Unknown analyst"}</strong>
+                              <StatusPill value={entry.analyst_decision} />
+                            </div>
+                            <p className="mt-2 text-sm text-muted-foreground">{entry.note}</p>
+                            <p className="mt-2 text-xs text-muted-foreground">{formatDateTime(entry.created_at)}</p>
+                          </article>
+                        ))}
+                      </div>
+                    </ScrollArea>
+                  )}
+                </CardContent>
+              </Card>
 
-          <section className="evidence-grid">
-            <JsonCard title="Original Request Payload" value={detail.original_request_payload} />
-            <JsonCard title="Explanation Payload" value={detail.explanation_payload} />
-            <JsonCard title="Routing Metadata" value={detail.routing_metadata} />
-          </section>
+              <Card>
+                <CardHeader>
+                  <CardTitle>Feedback history</CardTitle>
+                  <CardDescription>Confirmed labels are stored separately from internal analyst notes.</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  {detail.feedback_history.length === 0 ? (
+                    <EmptyState title="No confirmed outcomes yet" description="Submit feedback once the real outcome is known." />
+                  ) : (
+                    <ScrollArea className="max-h-96">
+                      <div className="grid gap-3 pr-3">
+                        {detail.feedback_history.map((entry, index) => (
+                          <article key={`${entry.feedback_timestamp}-${index}`} className="rounded-2xl border bg-muted/30 p-3">
+                            <div className="flex flex-wrap items-center justify-between gap-2">
+                              <strong className="text-sm">{entry.reviewer_username ?? "Unknown reviewer"}</strong>
+                              <StatusPill value={entry.confirmed_label} />
+                            </div>
+                            <p className="mt-2 text-sm text-muted-foreground">{entry.note ?? "No feedback note provided."}</p>
+                            <p className="mt-2 text-xs text-muted-foreground">{formatDateTime(entry.feedback_timestamp)}</p>
+                          </article>
+                        ))}
+                      </div>
+                    </ScrollArea>
+                  )}
+                </CardContent>
+              </Card>
 
-          <section className="evidence-grid">
-            <section className="panel">
-              <div className="panel-header">
-                <div>
-                  <h3>Review history</h3>
-                  <p>Analyst workflow actions stored on the case.</p>
-                </div>
-              </div>
-              {detail.review_history.length === 0 ? (
-                <EmptyState title="No review history yet" description="Submit the first analyst decision to populate this timeline." />
-              ) : (
-                <div className="timeline">
-                  {detail.review_history.map((entry, index) => (
-                    <article key={`${entry.created_at}-${index}`} className="timeline-item">
-                      <header>
-                        <strong>{entry.analyst_username ?? "Unknown analyst"}</strong>
-                        <StatusPill value={entry.analyst_decision} />
-                      </header>
-                      <p>{entry.note}</p>
-                      <span>{formatDateTime(entry.created_at)}</span>
-                    </article>
-                  ))}
-                </div>
-              )}
-            </section>
-
-            <section className="panel">
-              <div className="panel-header">
-                <div>
-                  <h3>Feedback history</h3>
-                  <p>Confirmed labels are stored separately from internal analyst notes.</p>
-                </div>
-              </div>
-              {detail.feedback_history.length === 0 ? (
-                <EmptyState title="No confirmed outcomes yet" description="Submit feedback once the real outcome is known." />
-              ) : (
-                <div className="timeline">
-                  {detail.feedback_history.map((entry, index) => (
-                    <article key={`${entry.feedback_timestamp}-${index}`} className="timeline-item">
-                      <header>
-                        <strong>{entry.reviewer_username ?? "Unknown reviewer"}</strong>
-                        <StatusPill value={entry.confirmed_label} />
-                      </header>
-                      <p>{entry.note ?? "No feedback note provided."}</p>
-                      <span>{formatDateTime(entry.feedback_timestamp)}</span>
-                    </article>
-                  ))}
-                </div>
-              )}
-            </section>
-
-            <section className="panel">
-              <div className="panel-header">
-                <div>
-                  <h3>Audit trail</h3>
-                  <p>Score, rescore, review, feedback, and Gemini actions captured for this workflow.</p>
-                </div>
-              </div>
-              {detail.audit_trail.length === 0 ? (
-                <EmptyState title="No audit entries" description="Audit events will appear here after backend workflow actions." />
-              ) : (
-                <div className="timeline">
-                  {detail.audit_trail.map((entry, index) => (
-                    <article key={`${entry.created_at}-${index}`} className="timeline-item">
-                      <header>
-                        <strong>{entry.action}</strong>
-                        <span>{entry.actor_username ?? "System"}</span>
-                      </header>
-                      <p>{formatDateTime(entry.created_at)}</p>
-                      <pre className="json-block">{JSON.stringify(entry.details, null, 2)}</pre>
-                    </article>
-                  ))}
-                </div>
-              )}
-            </section>
-          </section>
+              <Card>
+                <CardHeader>
+                  <CardTitle>Audit trail</CardTitle>
+                  <CardDescription>Score, rescore, review, feedback, and Gemini events.</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  {detail.audit_trail.length === 0 ? (
+                    <EmptyState title="No audit entries" description="Audit events will appear here after backend workflow actions." />
+                  ) : (
+                    <ScrollArea className="max-h-96">
+                      <div className="grid gap-3 pr-3">
+                        {detail.audit_trail.map((entry, index) => (
+                          <article key={`${entry.created_at}-${index}`} className="rounded-2xl border bg-muted/30 p-3">
+                            <div className="flex flex-wrap items-center justify-between gap-2">
+                              <strong className="text-sm">{entry.action}</strong>
+                              <span className="text-xs text-muted-foreground">{entry.actor_username ?? "System"}</span>
+                            </div>
+                            <p className="mt-2 text-xs text-muted-foreground">{formatDateTime(entry.created_at)}</p>
+                            <pre className="mt-3 overflow-x-auto rounded-2xl bg-background p-3 font-mono text-xs text-muted-foreground">
+                              {JSON.stringify(entry.details, null, 2)}
+                            </pre>
+                          </article>
+                        ))}
+                      </div>
+                    </ScrollArea>
+                  )}
+                </CardContent>
+              </Card>
+            </TabsContent>
+          </Tabs>
         </>
       ) : null}
     </GuardedPage>

@@ -6,6 +6,8 @@ import { Suspense, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 
 import { useAuth } from "@/components/auth-provider";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 
 function LoginPageContent() {
   const router = useRouter();
@@ -64,35 +66,51 @@ function LoginPageContent() {
   }, [router, searchParams, signIn, token]);
 
   return (
-    <div className="login-screen">
-      {tokenError ? <div className="error-banner">{tokenError}</div> : null}
-      <SignIn
-        routing="hash"
-        signUpUrl="/sign-up"
-        forceRedirectUrl={searchParams.get("next") ?? "/cases"}
-        appearance={{
-          variables: {
-            colorBackground: "#000000",
-            colorPrimary: "#ffffff",
-            colorText: "#ffffff",
-            colorTextSecondary: "#a1a1aa",
-            colorInputBackground: "#000000",
-            colorInputText: "#ffffff",
-            colorInputBorder: "#2a2a2a",
-            colorShimmer: "#111111",
-            colorDanger: "#ff6b6b",
-          },
-        }}
-      />
+    <div className="grid min-h-screen place-items-center bg-background p-6">
+      <Card className="w-full max-w-md">
+        <CardHeader>
+          <CardTitle>Sign in to Fraud Ops</CardTitle>
+          <CardDescription>Access the analyst queue, scoring intake, and monitoring workspace.</CardDescription>
+        </CardHeader>
+        <CardContent className="grid gap-4">
+          {tokenError ? (
+            <Alert variant="destructive">
+              <AlertTitle>Token sign-in failed</AlertTitle>
+              <AlertDescription>{tokenError}</AlertDescription>
+            </Alert>
+          ) : null}
+          <SignIn
+            routing="hash"
+            signUpUrl="/sign-up"
+            forceRedirectUrl={searchParams.get("next") ?? "/cases"}
+            appearance={{
+              variables: {
+                colorBackground: "transparent",
+                colorPrimary: "var(--primary)",
+                colorText: "var(--foreground)",
+                colorTextSecondary: "var(--muted-foreground)",
+                colorInputBackground: "var(--input)",
+                colorInputText: "var(--foreground)",
+                colorInputBorder: "var(--border)",
+                colorDanger: "var(--destructive)",
+                borderRadius: "0.75rem",
+              },
+              elements: {
+                cardBox: "shadow-none",
+                card: "bg-transparent shadow-none border-0 p-0",
+                footer: "bg-transparent",
+              },
+            }}
+          />
+        </CardContent>
+      </Card>
     </div>
   );
 }
 
 export default function LoginPage() {
   return (
-    <Suspense
-      fallback={<div className="login-screen" />}
-    >
+    <Suspense fallback={<div className="grid min-h-screen place-items-center bg-background" />}>
       <LoginPageContent />
     </Suspense>
   );

@@ -1,13 +1,13 @@
 "use client";
 
 import type { ReactNode } from "react";
-import { createContext, useContext, useEffect, useState } from "react";
+import { createContext, useCallback, useContext, useEffect, useState } from "react";
 import { useAuth as useClerkAuth, useClerk, useUser } from "@clerk/nextjs";
 
 import { getCurrentUser } from "@/lib/api";
 import type { AuthSession } from "@/lib/types";
 
-type AuthStatus = "loading" | "authenticated" | "anonymous";
+type AuthStatus = "loading" | "authenticated" | "anonymous" | "error";
 
 interface AuthContextValue {
   session: AuthSession | null;
@@ -55,6 +55,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setSession({
           userId: user?.id ?? "",
           username: currentUser.username,
+          email: user?.primaryEmailAddress?.emailAddress ?? user?.emailAddresses[0]?.emailAddress ?? null,
           role: currentUser.role,
         });
         setError(null);
@@ -65,7 +66,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }
         setSession(null);
         setError(caughtError instanceof Error ? caughtError.message : "Unable to load authenticated user.");
-        setStatus("authenticated");
+        setStatus("error");
       }
     }
 
@@ -75,11 +76,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     };
   }, [getToken, isLoaded, isSignedIn, user?.id]);
 
-  function logout(): void {
+  const logout = useCallback((): void => {
     void signOut();
     setSession(null);
     setStatus("anonymous");
-  }
+  }, [signOut]);
 
   return <AuthContext.Provider value={{ session, status, logout, error }}>{children}</AuthContext.Provider>;
 }

@@ -15,7 +15,7 @@ export function useAuthedRequest() {
   const run = useCallback(
     async <T,>(operation: (token: string) => Promise<T>): Promise<T> => {
       if (!session) {
-        throw new Error("Authentication required");
+        throw new Error("Authentication required. Sign in again before retrying this action.");
       }
       const token = await getToken();
       if (!token) {

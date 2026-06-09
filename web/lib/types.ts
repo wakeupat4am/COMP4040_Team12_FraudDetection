@@ -8,6 +8,7 @@ export interface AuthSession {
   userId: string;
   role: RoleValue;
   username: string;
+  email: string | null;
 }
 
 export interface CurrentUserResponse {

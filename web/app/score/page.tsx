@@ -2,8 +2,15 @@
 
 import { FormEvent, useState } from "react";
 import { useRouter } from "next/navigation";
+import { RotateCcwIcon, SendIcon } from "lucide-react";
 
 import { GuardedPage } from "@/components/guarded-page";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { ApiError, scoreCase } from "@/lib/api";
 import { useAuthedRequest } from "@/hooks/use-authed-request";
 import type { ScoreRequestPayload } from "@/lib/types";
@@ -42,6 +49,14 @@ export default function ScorePage() {
     setFormState((current) => ({ ...current, [field]: value }));
   }
 
+  function resetForm() {
+    const freshPayload = buildDefaultPayload();
+    setFormState(freshPayload);
+    setRawAttributesText(JSON.stringify(freshPayload.raw_attributes, null, 2));
+    setError(null);
+    setSuccessMessage(null);
+  }
+
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setSubmitting(true);
@@ -72,132 +87,129 @@ export default function ScorePage() {
 
   return (
     <GuardedPage
-      title="Browser Score Intake"
-      description="Submit canonical transaction payloads from the browser and land directly on the stored case detail."
+      title="Score Intake"
+      description="Create a scored transaction case, then continue directly into analyst review."
     >
-      <section className="panel">
-        <div className="panel-header">
-          <div>
-            <h3>Submit new transaction</h3>
-            <p>Use the canonical backend field names so the payload mirrors the production scoring contract.</p>
-          </div>
-        </div>
-        <form className="form-grid" onSubmit={handleSubmit}>
-          <div className="field-group">
-            <label htmlFor="transaction_id">Transaction ID</label>
-            <input
-              id="transaction_id"
-              className="text-input"
-              value={formState.transaction_id}
-              onChange={(event) => updateField("transaction_id", event.target.value)}
-            />
-          </div>
-          <div className="field-group">
-            <label htmlFor="transaction_timestamp">Transaction Timestamp</label>
-            <input
-              id="transaction_timestamp"
-              className="text-input"
-              value={formState.transaction_timestamp}
-              onChange={(event) => updateField("transaction_timestamp", event.target.value)}
-            />
-          </div>
-          <div className="field-group">
-            <label htmlFor="sender_id">Sender ID</label>
-            <input
-              id="sender_id"
-              className="text-input"
-              value={formState.sender_id}
-              onChange={(event) => updateField("sender_id", event.target.value)}
-            />
-          </div>
-          <div className="field-group">
-            <label htmlFor="receiver_id">Receiver ID</label>
-            <input
-              id="receiver_id"
-              className="text-input"
-              value={formState.receiver_id}
-              onChange={(event) => updateField("receiver_id", event.target.value)}
-            />
-          </div>
-          <div className="field-group">
-            <label htmlFor="amount">Amount</label>
-            <input
-              id="amount"
-              className="text-input"
-              type="number"
-              min="0"
-              step="0.01"
-              value={formState.amount}
-              onChange={(event) => updateField("amount", Number(event.target.value))}
-            />
-          </div>
-          <div className="field-group">
-            <label htmlFor="transaction_location">Transaction Location</label>
-            <input
-              id="transaction_location"
-              className="text-input"
-              value={formState.transaction_location}
-              onChange={(event) => updateField("transaction_location", event.target.value)}
-            />
-          </div>
-          <div className="field-group">
-            <label htmlFor="transaction_type">Transaction Type</label>
-            <input
-              id="transaction_type"
-              className="text-input"
-              value={formState.transaction_type}
-              onChange={(event) => updateField("transaction_type", event.target.value)}
-            />
-          </div>
-          <div className="field-group">
-            <label htmlFor="currency">Currency</label>
-            <input
-              id="currency"
-              className="text-input"
-              value={formState.currency ?? ""}
-              onChange={(event) => updateField("currency", event.target.value)}
-            />
-          </div>
-          <div className="field-group full-width">
-            <label htmlFor="channel">Channel</label>
-            <input
-              id="channel"
-              className="text-input"
-              value={formState.channel ?? ""}
-              onChange={(event) => updateField("channel", event.target.value)}
-            />
-          </div>
-          <div className="field-group full-width">
-            <label htmlFor="raw_attributes">Raw Attributes JSON</label>
-            <textarea
-              id="raw_attributes"
-              className="text-area"
-              value={rawAttributesText}
-              onChange={(event) => setRawAttributesText(event.target.value)}
-            />
-          </div>
-          {error ? <div className="error-banner full-width">{error}</div> : null}
-          {successMessage ? <div className="success-banner full-width">{successMessage}</div> : null}
-          <div className="button-row">
-            <button type="submit" className="primary-button" disabled={submitting}>
-              {submitting ? "Scoring..." : "Score Transaction"}
-            </button>
-            <button
-              type="button"
-              className="ghost-button"
-              onClick={() => {
-                const freshPayload = buildDefaultPayload();
-                setFormState(freshPayload);
-                setRawAttributesText(JSON.stringify(freshPayload.raw_attributes, null, 2));
-                setError(null);
-                setSuccessMessage(null);
-              }}
-            >
-              Reset Form
-            </button>
-          </div>
-        </form>
-      </section>
+      <Card>
+        <CardHeader>
+          <CardTitle>New transaction payload</CardTitle>
+          <CardDescription>Use canonical backend fields so the browser submission mirrors the scoring contract.</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <form className="grid gap-5" onSubmit={handleSubmit}>
+            <div className="grid gap-4 md:grid-cols-2">
+              <div className="grid gap-2">
+                <Label htmlFor="transaction_id">Transaction ID</Label>
+                <Input
+                  id="transaction_id"
+                  value={formState.transaction_id}
+                  onChange={(event) => updateField("transaction_id", event.target.value)}
+                />
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="transaction_timestamp">Transaction timestamp</Label>
+                <Input
+                  id="transaction_timestamp"
+                  value={formState.transaction_timestamp}
+                  onChange={(event) => updateField("transaction_timestamp", event.target.value)}
+                />
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="sender_id">Sender ID</Label>
+                <Input
+                  id="sender_id"
+                  value={formState.sender_id}
+                  onChange={(event) => updateField("sender_id", event.target.value)}
+                />
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="receiver_id">Receiver ID</Label>
+                <Input
+                  id="receiver_id"
+                  value={formState.receiver_id}
+                  onChange={(event) => updateField("receiver_id", event.target.value)}
+                />
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="amount">Amount</Label>
+                <Input
+                  id="amount"
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  value={formState.amount}
+                  onChange={(event) => updateField("amount", Number(event.target.value))}
+                />
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="transaction_location">Transaction location</Label>
+                <Input
+                  id="transaction_location"
+                  value={formState.transaction_location}
+                  onChange={(event) => updateField("transaction_location", event.target.value)}
+                />
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="transaction_type">Transaction type</Label>
+                <Input
+                  id="transaction_type"
+                  value={formState.transaction_type}
+                  onChange={(event) => updateField("transaction_type", event.target.value)}
+                />
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="currency">Currency</Label>
+                <Input
+                  id="currency"
+                  value={formState.currency ?? ""}
+                  onChange={(event) => updateField("currency", event.target.value)}
+                />
+              </div>
+              <div className="grid gap-2 md:col-span-2">
+                <Label htmlFor="channel">Channel</Label>
+                <Input
+                  id="channel"
+                  value={formState.channel ?? ""}
+                  onChange={(event) => updateField("channel", event.target.value)}
+                />
+              </div>
+              <div className="grid gap-2 md:col-span-2">
+                <Label htmlFor="raw_attributes">Raw attributes JSON</Label>
+                <Textarea
+                  id="raw_attributes"
+                  className="min-h-44 font-mono"
+                  value={rawAttributesText}
+                  onChange={(event) => setRawAttributesText(event.target.value)}
+                />
+              </div>
+            </div>
+
+            {error ? (
+              <Alert variant="destructive">
+                <AlertTitle>Unable to score transaction</AlertTitle>
+                <AlertDescription>{error}</AlertDescription>
+              </Alert>
+            ) : null}
+            {successMessage ? (
+              <Alert className="border-primary/30 bg-primary/10">
+                <AlertTitle>Score created</AlertTitle>
+                <AlertDescription>{successMessage}</AlertDescription>
+              </Alert>
+            ) : null}
+
+            <div className="flex flex-wrap gap-2">
+              <Button type="submit" disabled={submitting}>
+                <SendIcon className="size-4" />
+                {submitting ? "Scoring" : "Score transaction"}
+              </Button>
+              <Button type="button" variant="outline" onClick={resetForm} disabled={submitting}>
+                <RotateCcwIcon className="size-4" />
+                Reset form
+              </Button>
+            </div>
+          </form>
+        </CardContent>
+      </Card>
     </GuardedPage>
   );
 }
